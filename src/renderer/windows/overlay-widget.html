@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cognify Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui;
+            background: rgba(15, 23, 42, 0.95);
+            color: white;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            -webkit-app-region: drag;
+        }
+        
+        .container {
+            padding: 1rem;
+            min-width: 300px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .recording-indicator {
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            display: none;
+        }
+        
+        .recording-indicator.active {
+            display: block;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            -webkit-app-region: no-drag;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            background: #3b82f6;
+            color: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .btn:hover {
+            background: #2563eb;
+        }
+        
+        .transcription {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 8px;
+            padding: 1rem;
+            height: 200px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+        
+        .transcription-line {
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            background: rgba(51, 65, 85, 0.95);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            line-height: 1.4;
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+        }
+        
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        
+        .transcription-timestamp {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+        
+        .empty-transcription {
+            text-align: center; 
+            color: #94a3b8;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(51, 65, 85, 0.95);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: #cbd5e1;
+            margin-bottom: 1rem;
+        }
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+        
+        .status-dot.error {
+            background: #ef4444;
+        }
+        
+        .status-dot.warning {
+            background: #f59e0b;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+            -webkit-app-region: no-drag;
+        }
+        
+        .actions .btn {
+            flex: 1;
+        }
+        
+        .btn.success { background: #10b981; }
+        .btn.danger { background: #ef4444; }
+        .btn:disabled { 
+            opacity: 0.5; 
+            cursor: not-allowed; 
+        }
+        
+        /* Volume Meter Styles */
+        .volume-meter {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .volume-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .volume-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .volume-bar-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .volume-bar-container label {
+            font-size: 0.7rem;
+            color: #cbd5e1;
+            width: 35px;
+            flex-shrink: 0;
+        }
+        
+        .volume-bar {
+            flex: 1;
+            height: 12px;
+            background: rgba(51, 65, 85, 0.6);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .volume-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.1s ease;
+            position: relative;
+        }
+        
+        .rms-fill {
+            background: linear-gradient(90deg, #10b981 0%, #f59e0b 70%, #ef4444 90%);
+        }
+        
+        .peak-fill {
+            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #ef4444 80%);
+        }
+        
+        .volume-value {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            width: 35px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">
+                <div class="recording-indicator" id="recordingIndicator"></div>
+                <span id="sessionTitle">Recording Session</span>
+            </div>
+            <div class="controls">
+                <button class="btn" onclick="closeOverlay()">✕</button>
+            </div>
+        </div>
+        
+        <div class="transcription" id="transcription">
+            <div class="status-indicator" id="statusIndicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Ready to record</span>
+            </div>
+            
+            <!-- Volume Meter -->
+            <div class="volume-meter" id="volumeMeter" style="display: none;">
+                <div class="volume-label">🎤 Microphone Level</div>
+                <div class="volume-bars">
+                    <div class="volume-bar-container">
+                        <label>RMS:</label>
+                        <div class="volume-bar">
+                            <div id="rmsBar" class="volume-fill rms-fill" style="width: 0%;"></div>
+                        </div>
+                        <span id="rmsValue" class="volume-value">0%</span>
+                    </div>
+                    <div class="volume-bar-container">
+                        <label>Peak:</label>
+                        <div class="volume-bar">
+                            <div id="peakBar" class="volume-fill peak-fill" style="width: 0%;"></div>
+                        </div>
+                        <span id="peakValue" class="volume-value">0%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="empty-transcription" id="emptyTranscription">
+                <div>🎤</div>
+                <div>Click Start to begin recording</div>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <button class="btn success" onclick="toggleRecording()" id="recordBtn">Start</button>
+            <button class="btn" onclick="takeScreenshot()" id="screenshotBtn">📸</button>
+            <button class="btn danger" onclick="endSession()" id="endBtn">Done</button>
+        </div>
+    </div>
+    
+    <script>
+        let isRecording = false;
+        let sessionStartTime = null;
+        let transcriptionEntries = [];
+        let sessionTimer = null;
+        
+        // Initialize overlay
+        function initializeOverlay() {
+            sessionStartTime = new Date();
+            updateSessionTitle();
+            startSessionTimer();
+            
+            // Listen for transcription updates
+            if (window.electronAPI && window.electronAPI.onTranscriptionUpdate) {
+                window.electronAPI.onTranscriptionUpdate(handleTranscriptionUpdate);
+            }
+            
+            // Listen for audio level updates
+            if (window.electronAPI && window.electronAPI.onAudioLevelUpdate) {
+                window.electronAPI.onAudioLevelUpdate(handleAudioLevelUpdate);
+            }
+        }
+        
+        function updateSessionTitle() {
+            const title = document.getElementById('sessionTitle');
+            if (sessionStartTime) {
+                const elapsed = Math.floor((new Date() - sessionStartTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                title.textContent = `Recording ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+        
+        function startSessionTimer() {
+            sessionTimer = setInterval(updateSessionTitle, 1000);
+        }
+        
+        async function toggleRecording() {
+            const btn = document.getElementById('recordBtn');
+            const indicator = document.getElementById('recordingIndicator');
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const emptyTranscription = document.getElementById('emptyTranscription');
+            
+            if (!isRecording) {
+                // Start recording
+                try {
+                    btn.disabled = true;
+                    statusText.textContent = 'Starting audio recording...';
+                    statusDot.className = 'status-dot warning';
+                    
+                    if (window.electronAPI && window.electronAPI.startAudioRecording) {
+                        const result = await window.electronAPI.startAudioRecording();
+                        
+                        if (result.success) {
+                            isRecording = true;
+                            btn.textContent = 'Stop';
+                            btn.className = 'btn danger';
+                            indicator.classList.add('active');
+                            statusText.textContent = 'Recording and transcribing...';
+                            statusDot.className = 'status-dot';
+                            emptyTranscription.style.display = 'none';
+                            document.getElementById('volumeMeter').style.display = 'block';
+                        } else {
+                            throw new Error(result.error || 'Failed to start recording');
+                        }
+                    } else {
+                        throw new Error('Audio recording not available');
+                    }
+                } catch (error) {
+                    console.error('Failed to start recording:', error);
+                    statusText.textContent = `Error: ${error.message}`;
+                    statusDot.className = 'status-dot error';
+                    
+                    // Show fallback message
+                    emptyTranscription.innerHTML = `
+                        <div>⚠️</div>
+                        <div>Recording failed: ${error.message}</div>
+                        <div style="font-size: 0.75rem; margin-top: 0.5rem;">
+                            Make sure OpenAI API key is configured
+                        </div>
+                    `;
+                }
+                
+                btn.disabled = false;
+            } else {
+                // Stop recording
+                try {
+                    btn.disabled = true;
+                    statusText.textContent = 'Stopping recording...';
+                    statusDot.className = 'status-dot warning';
+                    
+                    if (window.electronAPI && window.electronAPI.stopAudioRecording) {
+                        const result = await window.electronAPI.stopAudioRecording();
+                        
+                        if (result.success) {
+                            isRecording = false;
+                            btn.textContent = 'Start';
+                            btn.className = 'btn success';
+                            indicator.classList.remove('active');
+                            statusText.textContent = `Recording stopped. ${transcriptionEntries.length} entries captured.`;
+                            statusDot.className = 'status-dot';
+                            document.getElementById('volumeMeter').style.display = 'none';
+                        } else {
+                            throw new Error(result.error || 'Failed to stop recording');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to stop recording:', error);
+                    statusText.textContent = `Error stopping: ${error.message}`;
+                    statusDot.className = 'status-dot error';
+                }
+                
+                btn.disabled = false;
+            }
+        }
+        
+        function handleTranscriptionUpdate(transcriptionEntry) {
+            console.log('Received transcription:', transcriptionEntry);
+            transcriptionEntries.push(transcriptionEntry);
+            addTranscriptionLine(transcriptionEntry);
+        }
+        
+        function handleAudioLevelUpdate(audioLevel) {
+            const volumeMeter = document.getElementById('volumeMeter');
+            const rmsBar = document.getElementById('rmsBar');
+            const peakBar = document.getElementById('peakBar');
+            const rmsValue = document.getElementById('rmsValue');
+            const peakValue = document.getElementById('peakValue');
+            
+            if (audioLevel && typeof audioLevel === 'object') {
+                const rms = audioLevel.rms || 0;
+                const peak = audioLevel.peak || 0;
+                
+                // Update RMS bar
+                rmsBar.style.width = `${Math.min(rms, 100)}%`;
+                rmsValue.textContent = `${rms}%`;
+                
+                // Update Peak bar
+                peakBar.style.width = `${Math.min(peak, 100)}%`;
+                peakValue.textContent = `${peak}%`;
+                
+                // Show volume meter if recording
+                if (isRecording) {
+                    volumeMeter.style.display = 'block';
+                }
+            }
+        }
+        
+        function addTranscriptionLine(entry) {
+            const transcriptionContainer = document.getElementById('transcription');
+            const emptyTranscription = document.getElementById('emptyTranscription');
+            
+            // Hide empty state
+            emptyTranscription.style.display = 'none';
+            
+            // Create transcription line
+            const line = document.createElement('div');
+            line.className = 'transcription-line';
+            
+            const timestamp = new Date(entry.timestamp).toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            
+            line.innerHTML = `
+                <div class="transcription-timestamp">${timestamp}</div>
+                <div>${entry.text}</div>
+            `;
+            
+            transcriptionContainer.appendChild(line);
+            transcriptionContainer.scrollTop = transcriptionContainer.scrollHeight;
+        }
+        
+        function takeScreenshot() {
+            const btn = document.getElementById('screenshotBtn');
+            
+            if (window.electronAPI && window.electronAPI.takeScreenshot) {
+                window.electronAPI.takeScreenshot().then(result => {
+                    if (result.success) {
+                        // Visual feedback
+                        const originalText = btn.textContent;
+                        btn.textContent = '✅';
+                        btn.style.background = '#10b981';
+                        
+                        setTimeout(() => {
+                            btn.textContent = originalText;
+                            btn.style.background = '';
+                        }, 1000);
+                    }
+                });
+            } else {
+                console.log('Taking screenshot...');
+            }
+        }
+        
+        async function endSession() {
+            if (confirm('End recording session and open main app?')) {
+                // Stop recording if active
+                if (isRecording) {
+                    await toggleRecording();
+                }
+                
+                // Clear timer
+                if (sessionTimer) {
+                    clearInterval(sessionTimer);
+                }
+                
+                const sessionData = {
+                    startTime: sessionStartTime,
+                    duration: Math.floor((new Date() - sessionStartTime) / 1000),
+                    transcription: transcriptionEntries,
+                    totalEntries: transcriptionEntries.length
+                };
+                
+                if (window.electronAPI && window.electronAPI.endSession) {
+                    window.electronAPI.endSession(sessionData);
+                } else {
+                    closeOverlay();
+                }
+            }
+        }
+        
+        function closeOverlay() {
+            // Stop recording if active
+            if (isRecording) {
+                toggleRecording();
+            }
+            
+            // Clear timer
+            if (sessionTimer) {
+                clearInterval(sessionTimer);
+            }
+            
+            // Remove event listeners
+            if (window.electronAPI && window.electronAPI.removeTranscriptionListener) {
+                window.electronAPI.removeTranscriptionListener();
+            }
+            
+            if (window.electronAPI && window.electronAPI.removeAudioLevelListener) {
+                window.electronAPI.removeAudioLevelListener();
+            }
+            
+            if (window.electronAPI && window.electronAPI.closeOverlay) {
+                window.electronAPI.closeOverlay();
+            } else {
+                window.close();
+            }
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', initializeOverlay);
+        
+        // Cleanup on unload
+        window.addEventListener('beforeunload', () => {
+            if (window.electronAPI && window.electronAPI.removeTranscriptionListener) {
+                window.electronAPI.removeTranscriptionListener();
+            }
+            
+            if (window.electronAPI && window.electronAPI.removeAudioLevelListener) {
+                window.electronAPI.removeAudioLevelListener();
+            }
+        });
+    </script>
+</body>
+</html> 

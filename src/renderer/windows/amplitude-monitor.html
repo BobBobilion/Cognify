@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Amplitude Monitor</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --text-tertiary: #888888;
+            --accent-blue: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff4444;
+            --accent-orange: #ffaa00;
+            --border-color: #333333;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--border-color);
+            padding: 1.5rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: var(--text-tertiary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .monitor-container {
+            flex: 1;
+            display: flex;
+            padding: 2rem;
+            gap: 2rem;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .audio-source {
+            flex: 1;
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .audio-source::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .microphone::before {
+            background: linear-gradient(90deg, transparent, var(--accent-green), transparent);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .source-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            background: var(--bg-tertiary);
+            border: 3px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .microphone .source-icon {
+            background: linear-gradient(135deg, var(--accent-green), rgba(0, 255, 136, 0.2));
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .system-audio .source-icon {
+            background: linear-gradient(135deg, var(--accent-blue), rgba(0, 212, 255, 0.2));
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .source-title {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .amplitude-display {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .amplitude-meter {
+            width: 120px;
+            height: 300px;
+            background: var(--bg-tertiary);
+            border-radius: 60px;
+            position: relative;
+            border: 3px solid var(--border-color);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .amplitude-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(0deg, 
+                var(--accent-green) 0%, 
+                var(--accent-green) 30%, 
+                var(--accent-orange) 60%, 
+                var(--accent-red) 100%);
+            border-radius: 0 0 57px 57px;
+            transition: height 0.1s ease-out;
+            height: 0%;
+        }
+
+        .microphone .amplitude-fill {
+            background: linear-gradient(0deg, 
+                var(--accent-green) 0%, 
+                var(--accent-green) 50%, 
+                var(--accent-orange) 80%, 
+                var(--accent-red) 100%);
+        }
+
+        .system-audio .amplitude-fill {
+            background: linear-gradient(0deg, 
+                var(--accent-blue) 0%, 
+                var(--accent-blue) 50%, 
+                var(--accent-orange) 80%, 
+                var(--accent-red) 100%);
+        }
+
+        .amplitude-text {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .amplitude-label {
+            font-size: 0.9rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .peak-indicator {
+            position: absolute;
+            right: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 4px;
+            background: var(--accent-red);
+            border-radius: 2px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .peak-indicator.active {
+            opacity: 1;
+            animation: flash 0.5s ease-in-out;
+        }
+
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .stats-bar {
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .controls {
+            position: absolute;
+            top: 1.5rem;
+            right: 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .control-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+        }
+
+        .control-btn:hover {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .status-indicator {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .waveform {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .wave-bar {
+            position: absolute;
+            bottom: 0;
+            width: 3px;
+            background: currentColor;
+            opacity: 0.6;
+            animation: wave 2s ease-in-out infinite;
+        }
+
+        @keyframes wave {
+            0%, 100% { height: 2px; }
+            50% { height: 30px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="controls">
+            <button class="control-btn" id="settingsBtn" title="Settings">⚙️</button>
+            <button class="control-btn" id="closeBtn" title="Close">✕</button>
+        </div>
+        <h1>AMPLITUDE MONITOR</h1>
+        <p>Real-time Audio Level Visualization</p>
+    </div>
+
+    <div class="monitor-container">
+        <div class="audio-source microphone">
+            <div class="source-icon">🎤</div>
+            <h2 class="source-title">Microphone</h2>
+            <div class="amplitude-display">
+                <div class="amplitude-meter">
+                    <div class="amplitude-fill" id="micAmplitudeFill"></div>
+                    <div class="peak-indicator" id="micPeakIndicator"></div>
+                </div>
+                <div class="amplitude-text" id="micAmplitudeText">0%</div>
+                <div class="amplitude-label">Current Level</div>
+            </div>
+            <div class="waveform" id="micWaveform"></div>
+        </div>
+
+        <div class="audio-source system-audio">
+            <div class="source-icon">🔊</div>
+            <h2 class="source-title">System Audio</h2>
+            <div class="amplitude-display">
+                <div class="amplitude-meter">
+                    <div class="amplitude-fill" id="systemAmplitudeFill"></div>
+                    <div class="peak-indicator" id="systemPeakIndicator"></div>
+                </div>
+                <div class="amplitude-text" id="systemAmplitudeText">0%</div>
+                <div class="amplitude-label">Current Level</div>
+            </div>
+            <div class="waveform" id="systemWaveform"></div>
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-value" id="micPeakValue">0%</div>
+            <div class="stat-label">Mic Peak</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="systemPeakValue">0%</div>
+            <div class="stat-label">System Peak</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="averageValue">0%</div>
+            <div class="stat-label">Average</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="sampleRate">44.1kHz</div>
+            <div class="stat-label">Sample Rate</div>
+        </div>
+    </div>
+
+    <div class="status-indicator">
+        <div class="status-dot"></div>
+        <div class="status-text">Monitoring Active</div>
+    </div>
+
+    <script>
+        // FFmpeg-based amplitude monitoring state
+        let isMonitoring = false;
+        let micAmplitude = 0;
+        let systemAmplitude = 0;
+        let micPeak = 0;
+        let systemPeak = 0;
+        let amplitudeHistory = [];
+        let animationFrame;
+        let systemAudioAvailable = false;
+
+        // DOM elements
+        const micAmplitudeFill = document.getElementById('micAmplitudeFill');
+        const micAmplitudeText = document.getElementById('micAmplitudeText');
+        const micPeakIndicator = document.getElementById('micPeakIndicator');
+        const systemAmplitudeFill = document.getElementById('systemAmplitudeFill');
+        const systemAmplitudeText = document.getElementById('systemAmplitudeText');
+        const systemPeakIndicator = document.getElementById('systemPeakIndicator');
+        
+        const micPeakValue = document.getElementById('micPeakValue');
+        const systemPeakValue = document.getElementById('systemPeakValue');
+        const averageValue = document.getElementById('averageValue');
+        
+        const micWaveform = document.getElementById('micWaveform');
+        const systemWaveform = document.getElementById('systemWaveform');
+        
+        const closeBtn = document.getElementById('closeBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+
+        // Initialize cross-platform amplitude monitoring
+        async function initializeAmplitudeMonitoring() {
+            try {
+                console.log('Starting cross-platform amplitude monitoring with Audify...');
+                
+                // Set up IPC event listeners
+                if (window.electronAPI) {
+                    window.electronAPI.onAmplitudeUpdate(handleAmplitudeUpdate);
+                    window.electronAPI.onAmplitudeError(handleAmplitudeError);
+                }
+                
+                // Start monitoring via main process
+                if (window.electronAPI && window.electronAPI.startAmplitudeMonitoring) {
+                    const result = await window.electronAPI.startAmplitudeMonitoring();
+                    
+                    if (result.success) {
+                        isMonitoring = true;
+                        startVisualization();
+                        updateStatus('Monitoring Active', 'success');
+                        console.log('Amplitude monitoring started successfully');
+                    } else {
+                        throw new Error(result.error || 'Failed to start monitoring');
+                    }
+                } else {
+                    throw new Error('Amplitude monitoring API not available');
+                }
+                
+            } catch (error) {
+                console.error('Failed to initialize amplitude monitoring:', error);
+                showError('Cross-platform monitoring failed: ' + error.message);
+            }
+        }
+
+        // Handle amplitude updates from main process
+        function handleAmplitudeUpdate(data) {
+            const { source, rms, peak, timestamp } = data;
+            
+            if (source === 'microphone') {
+                micAmplitude = rms;
+                micPeak = Math.max(micPeak, peak);
+            } else if (source === 'system') {
+                systemAmplitude = rms;
+                systemPeak = Math.max(systemPeak, peak);
+                systemAudioAvailable = true;
+            }
+            
+            // Store in history for average calculation
+            amplitudeHistory.push(rms);
+            if (amplitudeHistory.length > 100) {
+                amplitudeHistory.shift();
+            }
+        }
+
+        // Handle amplitude errors from main process
+        function handleAmplitudeError(data) {
+            const { source, error, solutions } = data;
+            console.error(`${source} amplitude error:`, error);
+            
+            if (source === 'system') {
+                showSystemAudioUnavailable(error, solutions);
+            } else if (source === 'microphone') {
+                showError(`Microphone error: ${error}`);
+            }
+        }
+
+        function startVisualization() {
+            function animate() {
+                if (!isMonitoring) return;
+                
+                // Update amplitude displays
+                updateAmplitudeDisplay('mic', micAmplitude);
+                updateAmplitudeDisplay('system', systemAmplitude);
+                
+                // Update peak indicators
+                updatePeakIndicator('mic', micAmplitude > 80);
+                updatePeakIndicator('system', systemAmplitude > 80);
+                
+                // Update waveforms
+                updateWaveform('mic', micAmplitude);
+                updateWaveform('system', systemAmplitude);
+                
+                // Update statistics
+                updateStatistics();
+                
+                // Reset peaks periodically
+                if (Math.random() < 0.01) {
+                    micPeak = Math.max(0, micPeak - 1);
+                    systemPeak = Math.max(0, systemPeak - 1);
+                }
+                
+                animationFrame = requestAnimationFrame(animate);
+            }
+            
+            animate();
+        }
+
+        function updateAmplitudeDisplay(type, amplitude) {
+            const fill = type === 'mic' ? micAmplitudeFill : systemAmplitudeFill;
+            const text = type === 'mic' ? micAmplitudeText : systemAmplitudeText;
+            
+            fill.style.height = amplitude + '%';
+            text.textContent = amplitude + '%';
+        }
+
+        function updatePeakIndicator(type, isActive) {
+            const indicator = type === 'mic' ? micPeakIndicator : systemPeakIndicator;
+            indicator.classList.toggle('active', isActive);
+        }
+
+        function updateWaveform(type, amplitude) {
+            const waveform = type === 'mic' ? micWaveform : systemWaveform;
+            
+            // Create wave bars periodically
+            if (Math.random() < 0.1 && amplitude > 0) {
+                const bar = document.createElement('div');
+                bar.className = 'wave-bar';
+                bar.style.left = Math.random() * 100 + '%';
+                bar.style.height = Math.max(2, amplitude / 2) + 'px';
+                bar.style.animationDelay = Math.random() * 2 + 's';
+                
+                waveform.appendChild(bar);
+                
+                // Remove old bars
+                setTimeout(() => {
+                    if (bar.parentNode) {
+                        bar.parentNode.removeChild(bar);
+                    }
+                }, 3000);
+            }
+        }
+
+        function updateStatistics() {
+            micPeakValue.textContent = micPeak + '%';
+            systemPeakValue.textContent = systemPeak + '%';
+            
+            if (amplitudeHistory.length > 0) {
+                const average = amplitudeHistory.reduce((a, b) => a + b, 0) / amplitudeHistory.length;
+                averageValue.textContent = Math.round(average) + '%';
+            }
+        }
+
+        function updateStatus(message, type = 'default') {
+            const statusText = document.querySelector('.status-text');
+            const statusDot = document.querySelector('.status-dot');
+            
+            statusText.textContent = message;
+            
+            // Update status indicator color
+            statusDot.classList.remove('error', 'warning');
+            if (type === 'error') {
+                statusDot.style.background = 'var(--accent-red)';
+            } else if (type === 'warning') {
+                statusDot.style.background = 'var(--accent-orange)';
+            } else {
+                statusDot.style.background = 'var(--accent-green)';
+            }
+        }
+
+        function showError(message) {
+            updateStatus(message, 'error');
+        }
+
+        function showSystemAudioUnavailable(errorMsg, solutions) {
+            const systemPanel = document.querySelector('.system-audio');
+            const systemTitle = systemPanel.querySelector('.source-title');
+            const systemAmplitudeText = systemPanel.querySelector('.amplitude-text');
+            const systemAmplitudeLabel = systemPanel.querySelector('.amplitude-label');
+            
+            // Update the system audio panel to show compatibility mode
+            systemTitle.textContent = 'System Audio';
+            systemAmplitudeText.textContent = 'OFF';
+            systemAmplitudeText.style.color = 'var(--text-tertiary)';
+            systemAmplitudeLabel.textContent = 'Audio Playback OK';
+            systemAmplitudeLabel.style.color = 'var(--accent-green)';
+            
+            // Add visual indicator
+            const systemIcon = systemPanel.querySelector('.source-icon');
+            systemIcon.style.opacity = '0.7';
+            systemIcon.innerHTML = '🔊';
+            
+            // Create helpful message
+            let tooltipText = `System Audio: Monitoring Not Available\n\n`;
+            tooltipText += `✅ You CAN STILL HEAR lectures, videos, and music normally!\n`;
+            tooltipText += `✅ YouTube, Spotify, Discord work perfectly!\n`;
+            tooltipText += `✅ Microphone monitoring shows your voice levels!\n\n`;
+            tooltipText += `This setup is PERFECT for:\n`;
+            tooltipText += `• Listening to lectures while monitoring your voice\n`;
+            tooltipText += `• Presentations with background audio\n`;
+            tooltipText += `• Recording while hearing playback\n\n`;
+            tooltipText += `System audio level monitoring is optional.\n`;
+            tooltipText += `To enable it: Enable "Stereo Mix" in Sound settings.`;
+            
+            systemPanel.title = tooltipText;
+            
+            // Make panel clickable to show detailed help
+            systemPanel.style.cursor = 'pointer';
+            systemPanel.addEventListener('click', () => showSystemAudioHelp(errorMsg, solutions));
+            
+            // Update status
+            updateStatus('Perfect for lectures: microphone monitoring active, audio playback working', 'success');
+        }
+
+        function showSystemAudioHelp(errorMsg, solutions) {
+            let helpMessage = `🎓 Perfect Setup for Learning!\n\n`;
+            helpMessage += `✅ AUDIO PLAYBACK: You can hear lectures, videos, music!\n`;
+            helpMessage += `✅ MICROPHONE: Real-time voice level monitoring!\n`;
+            helpMessage += `✅ COMPATIBILITY: Works with YouTube, Spotify, browsers!\n\n`;
+            
+            helpMessage += `🎯 What's Working:\n`;
+            helpMessage += `• You can listen to lectures/videos normally\n`;
+            helpMessage += `• Monitor your microphone levels in real-time\n`;
+            helpMessage += `• No conflicts with any audio applications\n`;
+            helpMessage += `• Perfect for presentations and recordings\n\n`;
+            
+            helpMessage += `🔊 About System Audio Level Monitoring:\n`;
+            helpMessage += `• Audio PLAYBACK works perfectly (you can hear everything!)\n`;
+            helpMessage += `• Only the visual level monitoring is not available\n`;
+            helpMessage += `• This is completely optional for most users\n`;
+            helpMessage += `• Your microphone monitoring is what really matters\n\n`;
+            
+            helpMessage += `🔧 To Enable System Audio Level Monitoring (Optional):\n`;
+            helpMessage += `1. Right-click speaker icon in taskbar\n`;
+            helpMessage += `2. Select "Open Sound settings"\n`;
+            helpMessage += `3. Click "Sound Control Panel"\n`;
+            helpMessage += `4. Go to "Recording" tab\n`;
+            helpMessage += `5. Right-click → "Show Disabled Devices"\n`;
+            helpMessage += `6. Enable "Stereo Mix" if available\n`;
+            helpMessage += `7. Restart the amplitude monitor\n\n`;
+            
+            helpMessage += `🎉 Current Setup is IDEAL for:\n`;
+            helpMessage += `• Listening to lectures while monitoring your voice\n`;
+            helpMessage += `• Recording presentations with background audio\n`;
+            helpMessage += `• Online meetings and classes\n`;
+            helpMessage += `• Any scenario where you need to hear AND speak`;
+            
+            alert(helpMessage);
+        }
+
+        // Stop monitoring function
+        async function stopMonitoring() {
+            try {
+                isMonitoring = false;
+                
+                if (animationFrame) {
+                    cancelAnimationFrame(animationFrame);
+                }
+                
+                if (window.electronAPI && window.electronAPI.stopAmplitudeMonitoring) {
+                    const result = await window.electronAPI.stopAmplitudeMonitoring();
+                    console.log('Amplitude monitoring stopped:', result);
+                }
+                
+                // Remove event listeners
+                if (window.electronAPI && window.electronAPI.removeAmplitudeListeners) {
+                    window.electronAPI.removeAmplitudeListeners();
+                }
+                
+                updateStatus('Monitoring Stopped', 'warning');
+                
+            } catch (error) {
+                console.error('Failed to stop amplitude monitoring:', error);
+            }
+        }
+
+        // Event listeners
+        closeBtn.addEventListener('click', async () => {
+            await stopMonitoring();
+            window.close();
+        });
+
+        settingsBtn.addEventListener('click', () => {
+            let statusMessage = '🎵 Cross-Platform Audio Monitor Status\n\n';
+            
+            // Compatibility mode status
+            statusMessage += '🔧 Compatibility Mode: ✅ ACTIVE\n';
+            statusMessage += '   (Uses shared audio APIs to avoid conflicts with YouTube, etc.)\n\n';
+            
+            // Microphone status
+            statusMessage += '🎤 Microphone:\n';
+            statusMessage += micAmplitude > 0 || isMonitoring ? '✅ Working (Compatible API)\n' : '❌ Not working\n';
+            statusMessage += `   Current Level: ${micAmplitude}%\n`;
+            statusMessage += `   Peak Level: ${micPeak}%\n\n`;
+            
+            // System audio status  
+            statusMessage += '🔊 System Audio:\n';
+            statusMessage += systemAudioAvailable ? '✅ Level monitoring active\n' : '✅ Playback working (monitoring not available)\n';
+            statusMessage += `   Current Level: ${systemAmplitude}%\n`;
+            statusMessage += `   Peak Level: ${systemPeak}%\n\n`;
+            
+            statusMessage += '🎓 Perfect for Learning:\n';
+            statusMessage += '• ✅ You can hear lectures, videos, music normally\n';
+            statusMessage += '• ✅ Monitor your voice levels while listening\n';
+            statusMessage += '• ✅ No conflicts with YouTube, Spotify, browsers\n';
+            statusMessage += '• ✅ Ideal for presentations and recordings\n\n';
+            
+            statusMessage += '🔧 Technical Details:\n';
+            statusMessage += '• Audio API: DirectSound/WASAPI (Shared mode)\n';
+            statusMessage += '• Microphone: Real-time monitoring (~40ms)\n';
+            statusMessage += '• Playback: Full compatibility with all apps\n';
+            statusMessage += '• Amplitude Range: 0-100%\n\n';
+            
+            if (!systemAudioAvailable) {
+                statusMessage += '💡 System Audio Level Monitoring (Optional):\n';
+                statusMessage += '• Audio PLAYBACK works perfectly - you can hear everything!\n';
+                statusMessage += '• Only the level monitoring is unavailable\n';
+                statusMessage += '• To enable level monitoring: Enable "Stereo Mix" in Sound settings\n';
+                statusMessage += '• This is completely optional for most users\n\n';
+            }
+            
+            statusMessage += '📚 Controls:\n';
+            statusMessage += '• Green = Safe level (0-60%)\n';
+            statusMessage += '• Orange = Moderate (60-80%)\n';
+            statusMessage += '• Red = High level (80-100%)\n';
+            statusMessage += '• Flash = Peak detected\n';
+            statusMessage += '• Waveforms = Visual activity\n\n';
+            
+            statusMessage += '🎯 Compatibility Features:\n';
+            statusMessage += '• No interference with YouTube/Spotify/Discord\n';
+            statusMessage += '• Works alongside other audio applications\n';
+            statusMessage += '• Uses shared audio mode instead of exclusive access';
+            
+            alert(statusMessage);
+        });
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Small delay to ensure IPC is ready
+            setTimeout(() => {
+                initializeAmplitudeMonitoring();
+            }, 500);
+        });
+
+        // Handle window close
+        window.addEventListener('beforeunload', () => {
+            stopMonitoring();
+        });
+    </script>
+</body>
+</html>

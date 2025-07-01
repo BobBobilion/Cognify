@@ -1,0 +1,64 @@
+{
+  "name": "cognify",
+  "version": "1.0.0",
+  "description": "AI-powered productivity and learning tool for real-time transcription, summarization, and flashcard generation",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish=never"
+  },
+  "keywords": [
+    "electron",
+    "desktop",
+    "ai",
+    "transcription",
+    "learning",
+    "productivity",
+    "flashcards",
+    "whisper",
+    "openai"
+  ],
+  "author": "Cognify Team",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "audify": "^1.9.0",
+    "date-fns": "^3.3.1",
+    "dotenv": "^17.0.0",
+    "firebase": "^11.10.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "node-record-lpcm16": "^1.0.1",
+    "openai": "^4.28.0",
+    "screenshot-desktop": "^1.15.0",
+    "uuid": "^9.0.1"
+  },
+  "build": {
+    "appId": "com.cognify.app",
+    "productName": "Cognify",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    }
+  }
+}

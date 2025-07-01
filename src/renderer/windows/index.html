@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cognify - AI-Powered Learning Assistant</title>
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
+            --border-color: #e2e8f0;
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #2563eb;
+            --accent-blue-light: #dbeafe;
+            --accent-green: #10b981;
+            --accent-green-hover: #059669;
+            --accent-purple: #8b5cf6;
+            --accent-orange: #f59e0b;
+            --danger-color: #ef4444;
+            --danger-hover: #dc2626;
+            --success-color: #10b981;
+            --success-hover: #059669;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --border-color: #334155;
+            --accent-blue: #60a5fa;
+            --accent-blue-hover: #3b82f6;
+            --accent-blue-light: #1e3a8a;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            z-index: 50;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-blue);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.125rem;
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .theme-toggle {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            background: var(--accent-blue-light);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+        
+        .theme-icon {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+        
+        .sidebar-nav {
+            flex: 1;
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--accent-blue-light);
+            color: var(--accent-blue);
+            border-right: 3px solid var(--accent-blue);
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .sidebar-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .user-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-email {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-plan {
+            font-size: 0.75rem;
+            color: var(--accent-blue);
+            margin: 0;
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .top-bar {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .menu-toggle:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.5rem 1rem;
+            min-width: 300px;
+        }
+
+        .search-input {
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            width: 100%;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .search-icon {
+            width: 16px;
+            height: 16px;
+            fill: var(--text-tertiary);
+        }
+
+        .content-area {
+            padding: 2rem;
+            max-width: 1200px;
+        }
+
+        /* Session Cards */
+        .sessions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .session-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .session-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--accent-blue);
+        }
+
+        .session-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .session-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 0.25rem 0;
+            line-height: 1.4;
+        }
+
+        .session-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            margin-bottom: 0.75rem;
+        }
+
+        .session-badge {
+            background: var(--accent-blue);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .session-badge.meeting { background: var(--accent-blue); }
+        .session-badge.lecture { background: var(--accent-purple); }
+        .session-badge.zoom { background: var(--accent-green); }
+        .session-badge.youtube { background: var(--danger-color); }
+        .session-badge.yuja { background: var(--accent-orange); }
+
+        .session-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .session-stats {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .stat-icon {
+            width: 12px;
+            height: 12px;
+            fill: currentColor;
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--accent-blue);
+            border: 1px solid var(--accent-blue);
+            color: white;
+            padding: 12px 24px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn:hover {
+            background: var(--accent-blue-hover);
+            border-color: var(--accent-blue-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-primary {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+        
+        .btn-success {
+            background: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .btn-success:hover {
+            background: var(--success-hover);
+            border-color: var(--success-hover);
+        }
+
+        .btn-large {
+            padding: 16px 32px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-chip:hover,
+        .filter-chip.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1.5rem;
+            fill: var(--text-tertiary);
+        }
+
+        .empty-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-description {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .search-bar {
+                min-width: 200px;
+            }
+
+            .content-area {
+                padding: 1rem;
+            }
+
+            .sessions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .top-bar {
+                padding: 1rem;
+            }
+
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">C</div>
+                    <div class="logo-text">Cognify</div>
+                </div>
+        <button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle" title="Toggle theme">
+            <svg class="theme-icon" id="theme-icon" viewBox="0 0 24 24">
+                <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/>
+            </svg>
+        </button>
+    </div>
+    
+            <nav class="sidebar-nav">
+                <button class="nav-item active" onclick="showDashboard()">
+                    <svg class="nav-icon" viewBox="0 0 24 24">
+                        <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                    </svg>
+                    Dashboard
+                </button>
+                <button class="nav-item" onclick="startRecording()">
+                    <svg class="nav-icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+                    </svg>
+                    Start Recording
+                </button>
+                <button class="nav-item" onclick="openAmplitudeMonitor()">
+                    <svg class="nav-icon" viewBox="0 0 24 24">
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                    </svg>
+                    Audio Monitor
+                </button>
+                <button class="nav-item" onclick="showSettings()">
+                    <svg class="nav-icon" viewBox="0 0 24 24">
+                        <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97L2.46 14.6c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.31.61.22l2.49-1c.52.39 1.06.73 1.69.98l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.25 1.17-.59 1.69-.98l2.49 1c.22.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
+                    </svg>
+                    Settings
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info" id="user-info" style="display: none;">
+                    <div class="user-avatar" id="user-avatar">U</div>
+                    <div class="user-details">
+                        <p class="user-email" id="user-email">user@example.com</p>
+                        <p class="user-plan">Free Plan</p>
+                    </div>
+                </div>
+                <div id="auth-section">
+                    <button class="btn btn-primary" onclick="openSignIn()" id="sign-in-btn">Sign In</button>
+                    <button class="btn" onclick="logout()" id="sign-out-btn" style="display: none; width: 100%; margin-top: 0.5rem;">Sign Out</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <div class="top-bar">
+                <div class="top-bar-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                        </svg>
+                    </button>
+                    <h1 class="page-title" id="page-title">Dashboard</h1>
+                </div>
+                <div class="search-bar">
+                    <svg class="search-icon" viewBox="0 0 24 24">
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                    </svg>
+                    <input type="text" class="search-input" placeholder="Search sessions..." id="search-input" oninput="filterSessions()">
+        </div>
+            </div>
+
+            <div class="content-area">
+                <!-- Dashboard Content -->
+                <div id="dashboard-content">
+                    <div class="filter-bar">
+                        <div class="filter-chip active" onclick="filterByType('all')">All Sessions</div>
+                        <div class="filter-chip" onclick="filterByType('meeting')">Meetings</div>
+                        <div class="filter-chip" onclick="filterByType('lecture')">Lectures</div>
+                        <div class="filter-chip" onclick="filterByType('zoom')">Zoom</div>
+                        <div class="filter-chip" onclick="filterByType('youtube')">YouTube</div>
+                        <div class="filter-chip" onclick="filterByType('yuja')">YuJa</div>
+                    </div>
+
+                    <div class="sessions-grid" id="sessions-grid">
+                        <!-- Sessions will be loaded here -->
+                    </div>
+
+                    <div class="empty-state" id="empty-state" style="display: none;">
+                        <svg class="empty-icon" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                        <h3 class="empty-title">No sessions yet</h3>
+                        <p class="empty-description">Start your first recording to see your sessions here.</p>
+                        <button class="btn btn-large btn-success" onclick="startRecording()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+                            </svg>
+                            Start Recording
+                        </button>
+            </div>
+        </div>
+        
+                <!-- Settings Content (hidden by default) -->
+                <div id="settings-content" style="display: none;">
+                    <h2>Settings</h2>
+                    <p>Settings panel will be implemented here.</p>
+                </div>
+        </div>
+        </main>
+    </div>
+
+    <script>
+        // Global state
+        let currentUser = null;
+        let sessions = [];
+        let currentFilter = 'all';
+
+        // Theme management
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('theme-icon');
+            const currentTheme = body.getAttribute('data-theme');
+            
+            if (currentTheme === 'dark') {
+                body.removeAttribute('data-theme');
+                themeIcon.innerHTML = '<path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/>';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                themeIcon.innerHTML = '<path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/>';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+        
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const themeIcon = document.getElementById('theme-icon');
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.body.setAttribute('data-theme', 'dark');
+                themeIcon.innerHTML = '<path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/>';
+            } else {
+                themeIcon.innerHTML = '<path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/>';
+            }
+        }
+        
+        // Navigation
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            sidebar.classList.toggle('open');
+        }
+
+        function showDashboard() {
+            setActiveNav('dashboard');
+            document.getElementById('page-title').textContent = 'Dashboard';
+            document.getElementById('dashboard-content').style.display = 'block';
+            document.getElementById('settings-content').style.display = 'none';
+        }
+
+        function showSettings() {
+            setActiveNav('settings');
+            document.getElementById('page-title').textContent = 'Settings';
+            document.getElementById('dashboard-content').style.display = 'none';
+            document.getElementById('settings-content').style.display = 'block';
+        }
+
+        function setActiveNav(active) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            if (active === 'dashboard') {
+                document.querySelectorAll('.nav-item')[0].classList.add('active');
+            } else if (active === 'settings') {
+                document.querySelectorAll('.nav-item')[2].classList.add('active');
+            }
+        }
+
+        function startRecording() {
+            // Launch the overlay widget
+            if (window.electronAPI && window.electronAPI.startRecording) {
+                window.electronAPI.startRecording();
+            } else {
+                alert('Recording functionality will be implemented with the overlay widget.');
+            }
+        }
+
+        // Open amplitude monitor window
+        async function openAmplitudeMonitor() {
+            try {
+                if (window.electronAPI && window.electronAPI.openAmplitudeMonitor) {
+                    await window.electronAPI.openAmplitudeMonitor();
+                } else {
+                    alert('Amplitude monitor functionality is not available.');
+                }
+            } catch (error) {
+                console.error('Failed to open amplitude monitor:', error);
+                alert('Failed to open amplitude monitor: ' + error.message);
+            }
+        }
+
+        // Session management
+        function loadSessions() {
+            // Sample data for now - this will be loaded from Firebase later
+            sessions = [
+                {
+                    id: '1',
+                    title: 'Machine Learning Fundamentals',
+                    type: 'lecture',
+                    date: '2024-01-15',
+                    duration: '01:23:45',
+                    description: 'Introduction to supervised and unsupervised learning algorithms.',
+                    screenshots: 8,
+                    flashcards: 15
+                },
+                {
+                    id: '2',
+                    title: 'Weekly Team Standup',
+                    type: 'zoom',
+                    date: '2024-01-14',
+                    duration: '00:32:15',
+                    description: 'Sprint planning and progress updates discussion.',
+                    screenshots: 3,
+                    flashcards: 7
+                },
+                {
+                    id: '3',
+                    title: 'Python Tutorial Series',
+                    type: 'youtube',
+                    date: '2024-01-13',
+                    duration: '02:15:30',
+                    description: 'Complete Python programming tutorial for beginners.',
+                    screenshots: 12,
+                    flashcards: 25
+                },
+                {
+                    id: '4',
+                    title: 'Introduction to Data Science',
+                    type: 'lecture',
+                    date: '2024-01-16',
+                    duration: '00:47:30',
+                    description: 'Comprehensive overview of data science fundamentals, CRISP-DM methodology, and essential skills for aspiring data scientists.',
+                    screenshots: 12,
+                    flashcards: 35
+                }
+            ];
+            
+            renderSessions();
+        }
+
+        function renderSessions() {
+            const grid = document.getElementById('sessions-grid');
+            const emptyState = document.getElementById('empty-state');
+            
+            let filteredSessions = sessions;
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            
+            if (searchTerm) {
+                filteredSessions = sessions.filter(session => 
+                    session.title.toLowerCase().includes(searchTerm) ||
+                    session.description.toLowerCase().includes(searchTerm) ||
+                    session.type.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (currentFilter !== 'all') {
+                filteredSessions = filteredSessions.filter(session => session.type === currentFilter);
+            }
+            
+            if (filteredSessions.length === 0) {
+                grid.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            grid.style.display = 'grid';
+            emptyState.style.display = 'none';
+            
+            grid.innerHTML = filteredSessions.map(session => `
+                <div class="session-card" onclick="openSession('${session.id}')">
+                    <div class="session-header">
+                        <div>
+                            <h3 class="session-title">${session.title}</h3>
+                            <div class="session-meta">
+                                <span class="session-badge ${session.type}">${session.type}</span>
+                                <span>${formatDate(session.date)}</span>
+                                <span>${session.duration}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="session-description">${session.description}</p>
+                    <div class="session-stats">
+                        <div class="stat-item">
+                            <svg class="stat-icon" viewBox="0 0 24 24">
+                                <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM5 17l3.5-4.5 2.5 3.01L14.5 11l4.5 6H5z"/>
+                            </svg>
+                            ${session.screenshots} screenshots
+                        </div>
+                        <div class="stat-item">
+                            <svg class="stat-icon" viewBox="0 0 24 24">
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                            </svg>
+                            ${session.flashcards} flashcards
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+
+        function filterSessions() {
+            renderSessions();
+        }
+
+        function filterByType(type) {
+            currentFilter = type;
+            
+            // Update active filter chip
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderSessions();
+        }
+
+        function openSession(sessionId) {
+            // Navigate to session detail page in the same window
+            window.location.href = `session-detail.html?sessionId=${sessionId}`;
+        }
+
+        // Authentication
+        async function openSignIn() {
+            try {
+                // Redirect main window to auth page instead of opening modal
+                window.location.href = 'auth.html';
+            } catch (error) {
+                console.error('Failed to redirect to sign in page:', error);
+            }
+        }
+        
+        async function logout() {
+            try {
+                const result = await window.electronAPI.signOut();
+                if (result.success) {
+                    // Redirect will happen automatically via main.js
+                    updateAuthUI(null);
+                } else {
+                    alert('Failed to sign out: ' + result.error);
+                }
+            } catch (error) {
+                alert('Sign out error: ' + error.message);
+            }
+        }
+        
+        function updateAuthUI(user) {
+            const userInfo = document.getElementById('user-info');
+            const userEmail = document.getElementById('user-email');
+            const userAvatar = document.getElementById('user-avatar');
+            const signInBtn = document.getElementById('sign-in-btn');
+            const signOutBtn = document.getElementById('sign-out-btn');
+            
+            if (user) {
+                currentUser = user;
+                userInfo.style.display = 'flex';
+                userEmail.textContent = user.email;
+                userAvatar.textContent = user.email.charAt(0).toUpperCase();
+                signInBtn.style.display = 'none';
+                signOutBtn.style.display = 'block';
+            } else {
+                currentUser = null;
+                userInfo.style.display = 'none';
+                signInBtn.style.display = 'block';
+                signOutBtn.style.display = 'none';
+            }
+        }
+        
+        // Initialize the app
+        window.addEventListener('DOMContentLoaded', async () => {
+            initializeTheme();
+            loadSessions();
+            
+            try {
+                const user = await window.electronAPI.getCurrentUser();
+                updateAuthUI(user);
+            } catch (error) {
+                console.error('Failed to get current user:', error);
+            }
+            
+            if (window.electronAPI) {
+            window.electronAPI.onAuthStateChanged((user) => {
+                updateAuthUI(user);
+            });
+            }
+        });
+        
+        // Cleanup on window unload
+        window.addEventListener('beforeunload', () => {
+            if (window.electronAPI) {
+            window.electronAPI.removeAuthStateListener();
+            }
+        });
+    </script>
+</body>
+</html> 

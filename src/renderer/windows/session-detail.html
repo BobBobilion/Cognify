@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Detail - Cognify</title>
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
+            --border-color: #e2e8f0;
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #2563eb;
+            --accent-blue-light: #dbeafe;
+            --accent-green: #10b981;
+            --accent-purple: #8b5cf6;
+            --accent-orange: #f59e0b;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --border-color: #334155;
+            --accent-blue: #60a5fa;
+            --accent-blue-hover: #3b82f6;
+            --accent-blue-light: #1e3a8a;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .back-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            width: 36px;
+            height: 36px;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-blue-light);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .session-info h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 0 0.25rem 0;
+            color: var(--text-primary);
+        }
+
+        .session-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .session-badge {
+            background: var(--accent-blue);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .session-badge.meeting { background: var(--accent-blue); }
+        .session-badge.lecture { background: var(--accent-purple); }
+        .session-badge.zoom { background: var(--accent-green); }
+        .session-badge.youtube { background: var(--danger-color); }
+        .session-badge.yuja { background: var(--accent-orange); }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            background: var(--accent-blue);
+            border: 1px solid var(--accent-blue);
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: var(--accent-blue-hover);
+            border-color: var(--accent-blue-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+        }
+
+        .tab.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .transcript-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .transcript-entry {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .transcript-entry:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .transcript-timestamp {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .transcript-text {
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .summary-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .summary-content {
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .key-points {
+            list-style: none;
+            padding: 0;
+        }
+
+        .key-points li {
+            margin-bottom: 0.75rem;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .key-points li:before {
+            content: "•";
+            color: var(--accent-blue);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .flashcard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .flashcard {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .flashcard:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--accent-blue);
+        }
+
+        .flashcard-question {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .flashcard-answer {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .screenshot-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .screenshot-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--accent-blue);
+        }
+
+        .screenshot-placeholder {
+            width: 100%;
+            height: 150px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-tertiary);
+            margin-bottom: 0.75rem;
+        }
+
+        .screenshot-timestamp {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }
+
+        .export-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .export-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .generate-section {
+            text-align: center;
+            padding: 3rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+        }
+
+        .generate-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 1rem;
+            fill: var(--text-tertiary);
+        }
+
+        .generate-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .generate-description {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .btn-large {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Notes Tab Styles */
+        .notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .notes-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .notes-progress {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-blue);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .notes-container {
+            min-height: 300px;
+        }
+
+        .notes-placeholder {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-tertiary);
+        }
+
+        .notes-placeholder svg {
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .notes-placeholder h4 {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .notes-placeholder p {
+            color: var(--text-tertiary);
+            line-height: 1.5;
+        }
+
+        .note-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .note-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .note-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .note-section-timestamp {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            background: var(--bg-tertiary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .note-section-content {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .note-section-content h4 {
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin: 1rem 0 0.5rem 0;
+        }
+
+        .note-section-content ul {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .note-section-content li {
+            margin-bottom: 0.25rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .notes-loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Combined Notes Styles */
+        .combined-notes {
+            max-width: none;
+        }
+
+        .combined-notes-intro {
+            background: var(--accent-blue-light);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .combined-notes-intro p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .note-subsection {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .note-subsection:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .subsection-title {
+            color: var(--accent-blue);
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 0 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-blue-light);
+        }
+
+        .subsection-content h4 {
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 1.25rem 0 0.75rem 0;
+        }
+
+        .subsection-content p {
+            margin: 0.75rem 0;
+            line-height: 1.6;
+        }
+
+        .subsection-content ul {
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .subsection-content li {
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+
+        /* Summary Tab Styles */
+        .summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .summary-main-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .summary-progress {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-container {
+            min-height: 300px;
+        }
+
+        .summary-placeholder {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-tertiary);
+        }
+
+        .summary-placeholder svg {
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .summary-placeholder h4 {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-placeholder p {
+            color: var(--text-tertiary);
+            line-height: 1.5;
+        }
+
+        .summary-sections {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .summary-section {
+            margin-bottom: 2rem;
+        }
+
+        .summary-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-blue-light);
+        }
+
+        .summary-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .key-points-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .key-points-content h4 {
+            color: var(--accent-blue);
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 0.75rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .key-points-content h4:not(:first-child) {
+            margin-top: 1.5rem;
+        }
+
+        .key-points-content p {
+            margin: 0 0 1rem 0;
+            color: var(--text-secondary);
+            text-align: justify;
+        }
+
+        .key-points-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .insights-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 1rem 0;
+        }
+
+        .insights-list li {
+            color: var(--text-secondary);
+            padding: 0.5rem 0;
+            position: relative;
+            padding-left: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .insights-list li::before {
+            content: "•";
+            color: var(--accent-blue);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .topics-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .topics-list li {
+            color: var(--text-secondary);
+            padding: 0.25rem 0;
+            position: relative;
+            padding-left: 1.5rem;
+            line-height: 1.4;
+        }
+
+        .topics-list li::before {
+            content: "•";
+            color: var(--accent-blue);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .qa-assistant {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .qa-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .qa-input {
+            width: 100%;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .qa-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .qa-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tab {
+                white-space: nowrap;
+                min-width: max-content;
+            }
+
+            .export-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <button class="back-btn" onclick="goBack()" title="Back to Dashboard">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                </svg>
+            </button>
+            <div class="session-info">
+                <h1 id="session-title">Session Title</h1>
+                <div class="session-meta">
+                    <span class="session-badge" id="session-badge">meeting</span>
+                    <span id="session-date">Jan 15, 2024</span>
+                    <span id="session-duration">01:23:45</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn" onclick="renameSession()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                </svg>
+                Rename
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('transcript')">Transcript</button>
+            <button class="tab" onclick="showTab('summary')">Summary</button>
+            <button class="tab" onclick="showTab('notes')">Notes</button>
+            <button class="tab" onclick="showTab('flashcards')">Flashcards</button>
+            <button class="tab" onclick="showTab('screenshots')">Screenshots</button>
+        </div>
+
+        <!-- Transcript Tab -->
+        <div id="transcript-content" class="tab-content active">
+            <div class="transcript-container" id="transcript-container">
+                <!-- Transcript entries will be loaded here -->
+            </div>
+            
+            <div class="qa-assistant">
+                <h3 class="qa-title">Q&A Assistant</h3>
+                <textarea class="qa-input" placeholder="Ask a question about this session..." id="qa-input"></textarea>
+                <button class="btn" onclick="askQuestion()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                    Ask Question
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Tab -->
+        <div id="summary-content" class="tab-content">
+            <div class="summary-header">
+                <h3 class="summary-main-title">AI-Generated Summary</h3>
+                <button class="btn btn-success" onclick="generateSummary()" id="generate-summary-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Generate Summary
+                </button>
+            </div>
+
+            <div class="summary-progress" id="summary-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="summary-progress-fill"></div>
+                </div>
+                <div class="progress-text" id="summary-progress-text">Analyzing transcript...</div>
+            </div>
+
+            <div class="summary-container" id="summary-container">
+                <div class="summary-placeholder" id="summary-placeholder">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                    </svg>
+                    <h4>No Summary Generated Yet</h4>
+                    <p>Click the "Generate Summary" button to create an AI-powered summary of your session.</p>
+                </div>
+
+                <div class="summary-sections" id="summary-sections" style="display: none;">
+            <div class="summary-section">
+                        <h3 class="summary-title">Overview</h3>
+                        <div class="summary-content" id="ai-summary-text">
+                            <!-- AI generated summary will appear here -->
+                </div>
+            </div>
+
+            <div class="summary-section">
+                        <h3 class="summary-title">Key Points & Action Items</h3>
+                        <div class="key-points-content" id="ai-key-points">
+                            <!-- AI generated key points in paragraph form will appear here -->
+                        </div>
+            </div>
+
+            <div class="summary-section">
+                        <h3 class="summary-title">Main Topics Covered</h3>
+                        <ul class="topics-list" id="ai-topics">
+                            <!-- AI generated topics as bullet points will appear here -->
+                </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes Tab -->
+        <div id="notes-content" class="tab-content">
+            <div class="notes-header">
+                <h3 class="notes-title">AI-Generated Notes</h3>
+                <button class="btn btn-success" onclick="generateNotes()" id="generate-notes-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Generate Notes
+                </button>
+            </div>
+            
+            <div class="notes-progress" id="notes-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">Processing chunk 1 of 5...</div>
+            </div>
+
+            <div class="notes-container" id="notes-container">
+                <div class="notes-placeholder" id="notes-placeholder">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                    </svg>
+                    <h4>No Notes Generated Yet</h4>
+                    <p>Click the "Generate Notes" button to create AI-powered notes from your session transcript.</p>
+                </div>
+                
+                <div class="notes-sections" id="notes-sections" style="display: none;">
+                    <!-- Generated note sections will appear here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Flashcards Tab -->
+        <div id="flashcards-content" class="tab-content">
+            <div class="export-section">
+                <h3 class="export-title">Export Flashcards</h3>
+                <div class="export-buttons">
+                    <button class="btn" onclick="exportAnki()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                        </svg>
+                        Export to Anki
+                    </button>
+                    <button class="btn" onclick="exportQuizlet()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                        </svg>
+                        Export to Quizlet
+                    </button>
+                </div>
+            </div>
+
+            <div id="flashcards-grid" class="flashcard-grid">
+                <!-- Flashcards will be loaded here -->
+            </div>
+
+            <div id="generate-flashcards" class="generate-section">
+                <svg class="generate-icon" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                </svg>
+                <h3 class="generate-title">Generate Flashcards</h3>
+                <p class="generate-description">Click the button below to generate flashcards from your session content using AI.</p>
+                <button class="btn btn-success btn-large" onclick="generateFlashcards()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Generate Flashcards
+                </button>
+            </div>
+        </div>
+
+        <!-- Screenshots Tab -->
+        <div id="screenshots-content" class="tab-content">
+            <div class="screenshots-grid" id="screenshots-grid">
+                <!-- Screenshots will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // All session data
+        const allSessionData = {
+            '1': {
+            id: '1',
+            title: 'Machine Learning Fundamentals',
+            type: 'lecture',
+            date: '2024-01-15',
+            duration: '01:23:45',
+            description: 'Introduction to supervised and unsupervised learning algorithms.',
+            transcript: [
+                {
+                    timestamp: '00:00:15',
+                    text: 'Welcome to today\'s lecture on machine learning fundamentals. We\'ll be covering the basics of supervised and unsupervised learning algorithms.'
+                },
+                {
+                    timestamp: '00:02:30',
+                    text: 'Supervised learning is a type of machine learning where we train models using labeled data. The algorithm learns from input-output pairs.'
+                },
+                {
+                    timestamp: '00:05:45',
+                    text: 'Common supervised learning algorithms include linear regression, decision trees, and neural networks. Each has its own strengths and use cases.'
+                }
+            ],
+            summary: 'This lecture provided an introduction to machine learning fundamentals, focusing on supervised and unsupervised learning approaches.',
+            keyPoints: [
+                'Supervised learning uses labeled training data',
+                'Unsupervised learning finds patterns in unlabeled data',
+                'Common algorithms include regression, classification, and clustering',
+                'Neural networks are powerful but require large datasets'
+            ],
+            actionItems: [
+                'Practice implementing linear regression',
+                'Read chapter 3 of the textbook',
+                'Complete homework assignment on decision trees'
+            ],
+            flashcards: [],
+                notes: [],
+            screenshots: [
+                { id: 1, timestamp: '00:03:15', description: 'Supervised Learning Diagram' },
+                { id: 2, timestamp: '00:07:22', description: 'Algorithm Comparison Chart' },
+                { id: 3, timestamp: '00:12:45', description: 'Neural Network Architecture' }
+            ]
+            },
+            '2': {
+                id: '2',
+                title: 'Weekly Team Standup',
+                type: 'zoom',
+                date: '2024-01-14',
+                duration: '00:32:15',
+                description: 'Sprint planning and progress updates discussion.',
+                transcript: [
+                    {
+                        timestamp: '00:00:10',
+                        text: 'Good morning everyone, welcome to our weekly standup. Let\'s start with sprint updates.'
+                    },
+                    {
+                        timestamp: '00:01:30',
+                        text: 'Sarah, can you give us an update on the authentication feature development?'
+                    },
+                    {
+                        timestamp: '00:02:45',
+                        text: 'The authentication system is 80% complete. I\'m working on the password reset functionality.'
+                    },
+                    {
+                        timestamp: '00:04:20',
+                        text: 'Great progress! Mike, how are the API integrations coming along?'
+                    }
+                ],
+                summary: 'Weekly standup covering sprint progress, authentication feature updates, and API integration status.',
+                keyPoints: [
+                    'Authentication system 80% complete',
+                    'Password reset functionality in progress',
+                    'API integrations on track',
+                    'Sprint goals aligned with timeline'
+                ],
+                actionItems: [
+                    'Complete authentication testing by Friday',
+                    'Review API documentation',
+                    'Schedule code review for next Tuesday'
+                ],
+                flashcards: [],
+                notes: [],
+                screenshots: [
+                    { id: 1, timestamp: '00:02:15', description: 'Sprint Board Overview' },
+                    { id: 2, timestamp: '00:05:30', description: 'Authentication Flow Diagram' },
+                    { id: 3, timestamp: '00:08:45', description: 'API Integration Status' }
+                ]
+            },
+            '3': {
+                id: '3',
+                title: 'Python Tutorial Series',
+                type: 'youtube',
+                date: '2024-01-13',
+                duration: '02:15:30',
+                description: 'Complete Python programming tutorial for beginners.',
+                transcript: [
+                    {
+                        timestamp: '00:00:20',
+                        text: 'Welcome to this comprehensive Python tutorial series for beginners. Today we\'ll cover variables and data types.'
+                    },
+                    {
+                        timestamp: '00:03:45',
+                        text: 'Python has several built-in data types including integers, floats, strings, and booleans.'
+                    },
+                    {
+                        timestamp: '00:07:15',
+                        text: 'Let\'s create our first variable. In Python, you can assign a value like this: name equals quote John quote.'
+                    },
+                    {
+                        timestamp: '00:12:30',
+                        text: 'Lists in Python are ordered collections that can hold multiple items of different data types.'
+                    }
+                ],
+                summary: 'Comprehensive Python tutorial covering variables, data types, and basic programming concepts for beginners.',
+                keyPoints: [
+                    'Python variables don\'t need type declarations',
+                    'Built-in data types: int, float, string, boolean',
+                    'Lists are ordered and mutable collections',
+                    'Python syntax is clean and readable'
+                ],
+                actionItems: [
+                    'Practice creating variables with different data types',
+                    'Complete the exercises in chapter 2',
+                    'Install Python development environment'
+                ],
+                flashcards: [],
+                notes: [],
+                screenshots: [
+                    { id: 1, timestamp: '00:05:20', description: 'Variable Assignment Example' },
+                    { id: 2, timestamp: '00:08:45', description: 'Data Types Overview' },
+                    { id: 3, timestamp: '00:15:30', description: 'List Operations Demo' }
+                ]
+            },
+            '4': {
+                id: '4',
+                title: 'Introduction to Data Science',
+                type: 'lecture',
+                date: '2024-01-16',
+                duration: '00:47:30',
+                description: 'Comprehensive overview of data science fundamentals, CRISP-DM methodology, and essential skills for aspiring data scientists.',
+                transcript: [
+                    {
+                        timestamp: '00:00:30',
+                        text: 'Welcome everyone to today\'s comprehensive lecture on Introduction to Data Science. I\'m Dr. Sarah Mitchell, a Professor of Computer Science, and I\'ve been working in data science for over fifteen years.'
+                    },
+                    {
+                        timestamp: '00:01:15',
+                        text: 'Data science is a multidisciplinary field that uses scientific methods, processes, algorithms, and systems to extract knowledge and insights from structured and unstructured data.'
+                    },
+                    {
+                        timestamp: '00:02:30',
+                        text: 'Think of data science as modern-day alchemy - but instead of trying to turn lead into gold, we\'re transforming raw, messy data into valuable, actionable insights.'
+                    },
+                    {
+                        timestamp: '00:04:15',
+                        text: 'We create approximately 2.5 quintillion bytes of data every single day. That\'s equivalent to 250,000 complete digital copies of the Library of Congress being created daily.'
+                    },
+                    {
+                        timestamp: '00:05:45',
+                        text: 'The data science workflow is organized around CRISP-DM: Cross-Industry Standard Process for Data Mining, consisting of six interconnected phases.'
+                    },
+                    {
+                        timestamp: '00:07:15',
+                        text: 'Business Understanding is where we define the problem from a business perspective. Are we trying to predict customer churn? Optimize supply chain efficiency?'
+                    },
+                    {
+                        timestamp: '00:09:00',
+                        text: 'Data Preparation is often the least glamorous but most important part. Studies show data scientists spend 60-80% of their time on data cleaning and preparation.'
+                    },
+                    {
+                        timestamp: '00:11:30',
+                        text: 'For supervised learning, we might use linear regression, logistic regression, decision trees, random forests, or neural networks depending on the problem type.'
+                    },
+                    {
+                        timestamp: '00:17:45',
+                        text: 'Analytical thinking and problem-solving form the foundation of data science. You need to be comfortable with ambiguity and curious about patterns.'
+                    },
+                    {
+                        timestamp: '00:19:30',
+                        text: 'Python has emerged as the dominant language with libraries like pandas, NumPy, matplotlib, and scikit-learn. R is popular in academic contexts.'
+                    },
+                    {
+                        timestamp: '00:21:45',
+                        text: 'One of the most common mistakes is confusing correlation with causation. Ice cream sales and drowning incidents are correlated, but ice cream doesn\'t cause drowning.'
+                    },
+                    {
+                        timestamp: '00:24:00',
+                        text: 'In healthcare, predictive models can identify patients at risk of sepsis hours before clinical symptoms appear, potentially saving thousands of lives.'
+                    },
+                    {
+                        timestamp: '00:26:15',
+                        text: 'Netflix uses sophisticated recommendation algorithms, airlines use dynamic pricing, and Walmart optimizes inventory across thousands of stores using machine learning.'
+                    },
+                    {
+                        timestamp: '00:33:00',
+                        text: 'Start with Python basics, then dive into pandas for data manipulation. Build a portfolio of projects and share your work on GitHub.'
+                    },
+                    {
+                        timestamp: '00:39:45',
+                        text: 'Career paths include traditional data scientist roles, machine learning engineers, data analysts, research scientists, and product data scientists.'
+                    },
+                    {
+                        timestamp: '00:44:15',
+                        text: 'Data science is about curiosity, creativity, and solving meaningful problems. Combine technical proficiency with domain knowledge and communication skills.'
+                    }
+                ],
+                summary: 'Comprehensive 47-minute lecture covering data science fundamentals, historical evolution, CRISP-DM methodology deep dive, essential technical and soft skills, extensive real-world applications across industries, detailed career paths, and practical guidance for aspiring data scientists.',
+                keyPoints: [
+                    'Data science combines statistics, mathematics, computer science, and domain expertise',
+                    'CRISP-DM methodology: 6 interconnected phases from Business Understanding to Deployment',
+                    'Data scientists spend 60-80% of their time on data cleaning and preparation',
+                    'Python dominates with pandas, NumPy, matplotlib, scikit-learn libraries',
+                    'Four Vs of big data: Volume, Velocity, Variety, and Veracity',
+                    'Correlation vs causation is a critical distinction to understand',
+                    'Communication skills are essential for translating technical findings',
+                    'Domain expertise significantly enhances analysis value and accuracy',
+                    'Healthcare applications include sepsis prediction and medical imaging AI',
+                    'Business applications span recommendation systems to fraud detection',
+                    'Multiple career paths: data scientist, ML engineer, analyst, researcher'
+                ],
+                actionItems: [
+                    'Start with Python basics and progress to data science libraries',
+                    'Master pandas for data manipulation and NumPy for numerical computing',
+                    'Build statistics foundation including probability and hypothesis testing',
+                    'Practice with real datasets on Kaggle and build a project portfolio',
+                    'Learn Git/GitHub for version control and code sharing',
+                    'Develop data visualization skills with matplotlib and seaborn',
+                    'Understand machine learning algorithms and their appropriate use cases',
+                    'Focus on communication and stakeholder management skills',
+                    'Consider specializing in domains like NLP, computer vision, or time series',
+                    'Stay current with industry trends and emerging technologies'
+                ],
+                flashcards: [],
+                notes: [],
+                screenshots: [
+                    { id: 1, timestamp: '00:02:30', description: 'Data Science Definition and Core Components' },
+                    { id: 2, timestamp: '00:05:45', description: 'CRISP-DM Methodology Framework' },
+                    { id: 3, timestamp: '00:11:30', description: 'Machine Learning Algorithm Types' },
+                    { id: 4, timestamp: '00:15:30', description: 'Model Evaluation Metrics' },
+                    { id: 5, timestamp: '00:19:30', description: 'Python Libraries Ecosystem' },
+                    { id: 6, timestamp: '00:24:00', description: 'Healthcare AI Applications' },
+                    { id: 7, timestamp: '00:28:30', description: 'Business Intelligence Use Cases' },
+                    { id: 8, timestamp: '00:33:00', description: 'Learning Roadmap for Beginners' },
+                    { id: 9, timestamp: '00:37:30', description: 'Portfolio Development Strategy' },
+                    { id: 10, timestamp: '00:39:45', description: 'Data Science Career Paths' },
+                    { id: 11, timestamp: '00:42:00', description: 'Emerging Trends and Technologies' },
+                    { id: 12, timestamp: '00:44:15', description: 'Ethics in Data Science' }
+                ]
+            }
+        };
+
+        // Current session data (will be set based on URL parameter)
+        let sessionData = null;
+
+        function getSessionIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('sessionId') || '1'; // Default to session 1 if no parameter
+        }
+
+        function loadSessionData() {
+            const sessionId = getSessionIdFromUrl();
+            sessionData = allSessionData[sessionId];
+            
+            if (!sessionData) {
+                // Fallback to first session if ID not found
+                sessionData = allSessionData['1'];
+                console.warn(`Session ${sessionId} not found, defaulting to session 1`);
+            }
+        }
+
+        function initializePage() {
+            // Load the correct session data first
+            loadSessionData();
+            
+            // Load session data into the page
+            document.getElementById('session-title').textContent = sessionData.title;
+            document.getElementById('session-badge').textContent = sessionData.type;
+            document.getElementById('session-badge').className = `session-badge ${sessionData.type}`;
+            document.getElementById('session-date').textContent = formatDate(sessionData.date);
+            document.getElementById('session-duration').textContent = sessionData.duration;
+
+            loadTranscript();
+            loadScreenshots();
+            checkFlashcards();
+        }
+
+        function loadTranscript() {
+            const container = document.getElementById('transcript-container');
+            container.innerHTML = sessionData.transcript.map(entry => `
+                <div class="transcript-entry">
+                    <div class="transcript-timestamp">${entry.timestamp}</div>
+                    <div class="transcript-text">${entry.text}</div>
+                </div>
+            `).join('');
+        }
+
+
+
+        function loadScreenshots() {
+            const grid = document.getElementById('screenshots-grid');
+            grid.innerHTML = sessionData.screenshots.map(screenshot => `
+                <div class="screenshot-item" onclick="viewScreenshot(${screenshot.id})">
+                    <div class="screenshot-placeholder">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                        </svg>
+                    </div>
+                    <div class="screenshot-timestamp">${screenshot.timestamp} - ${screenshot.description}</div>
+                </div>
+            `).join('');
+        }
+
+        function checkFlashcards() {
+            const grid = document.getElementById('flashcards-grid');
+            const generateSection = document.getElementById('generate-flashcards');
+            
+            if (sessionData.flashcards.length === 0) {
+                grid.style.display = 'none';
+                generateSection.style.display = 'block';
+            } else {
+                grid.style.display = 'grid';
+                generateSection.style.display = 'none';
+                loadFlashcards();
+            }
+        }
+
+        function loadFlashcards() {
+            const grid = document.getElementById('flashcards-grid');
+            grid.innerHTML = sessionData.flashcards.map((card, index) => `
+                <div class="flashcard" onclick="flipCard(${index})">
+                    <div class="flashcard-question">${card.question}</div>
+                    <div class="flashcard-answer">${card.answer}</div>
+                </div>
+            `).join('');
+        }
+
+        function showTab(tabName) {
+            // Remove active class from all tabs and content
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Add active class to selected tab and content
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-content').classList.add('active');
+        }
+
+        function goBack() {
+            // Navigate back to the main dashboard
+            window.location.href = 'index.html';
+        }
+
+        function renameSession() {
+            const newTitle = prompt('Enter new session title:', sessionData.title);
+            if (newTitle && newTitle.trim()) {
+                sessionData.title = newTitle.trim();
+                document.getElementById('session-title').textContent = sessionData.title;
+                // TODO: Save to Firebase
+            }
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qa-input');
+            const question = input.value.trim();
+            if (!question) return;
+            
+            const askBtn = event.target;
+            const originalText = askBtn.innerHTML;
+            
+            try {
+                // Show loading state
+                askBtn.disabled = true;
+                askBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
+                        <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
+                    </svg>
+                    Thinking...
+                `;
+                
+                // Prepare context from transcription
+                const context = sessionData.transcript
+                    .map(entry => `[${entry.timestamp}] ${entry.text}`)
+                    .join('\n');
+                
+                // Call the AI service
+                if (window.electronAPI && window.electronAPI.askAIQuestion) {
+                    const result = await window.electronAPI.askAIQuestion(question, context);
+                    
+                    if (result.success) {
+                        // Show the answer in an alert or modal
+                        alert(`Q: ${question}\n\nA: ${result.answer}`);
+                        input.value = ''; // Clear the input
+                    } else {
+                        throw new Error(result.error || 'Failed to get AI response');
+                    }
+                } else {
+                    throw new Error('AI assistant not available');
+                }
+                
+            } catch (error) {
+                console.error('Error asking AI question:', error);
+                alert(`Failed to get AI response: ${error.message}\n\nQuestion: ${question}`);
+            } finally {
+                // Restore button state
+                askBtn.disabled = false;
+                askBtn.innerHTML = originalText;
+            }
+        }
+
+        async function generateNotes() {
+            const generateBtn = document.getElementById('generate-notes-btn');
+            const originalText = generateBtn.innerHTML;
+            const progressDiv = document.getElementById('notes-progress');
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            const placeholder = document.getElementById('notes-placeholder');
+            const sectionsDiv = document.getElementById('notes-sections');
+            
+            try {
+                // Show loading state
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
+                        <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
+                    </svg>
+                    Generating...
+                `;
+                
+                // Hide placeholder and show progress
+                placeholder.style.display = 'none';
+                progressDiv.style.display = 'block';
+                sectionsDiv.style.display = 'block';
+                sectionsDiv.innerHTML = ''; // Clear previous notes
+                
+                // Prepare transcription text
+                const transcriptionText = sessionData.transcript
+                    .map(entry => `[${entry.timestamp}] ${entry.text}`)
+                    .join('\n');
+                
+                if (!transcriptionText.trim()) {
+                    throw new Error('No transcription data available to generate notes');
+                }
+                
+                // Chunk the transcription
+                const chunks = chunkTranscriptionByChars(transcriptionText, 500); // 500 characters per chunk
+                console.log(`🔄 Processing ${chunks.length} chunks...`);
+                
+                // Calculate total characters and average chunk size
+                const totalChars = transcriptionText.length;
+                const avgChunkSize = totalChars / chunks.length;
+                console.log(`📏 Total transcription: ${totalChars} characters`);
+                console.log(`📊 Average chunk size: ${Math.round(avgChunkSize)} characters`);
+                
+                // Collect all notes from chunks
+                const allNotesSections = [];
+                
+                // Process each chunk
+                for (let i = 0; i < chunks.length; i++) {
+                    const chunkIndex = i + 1;
+                    const chunk = chunks[i];
+                    
+                    // Print chunk character length
+                    console.log(`📊 Chunk ${chunkIndex}/${chunks.length}: ${chunk.length} characters`);
+                    console.log(`📝 Chunk ${chunkIndex} preview:`, chunk.substring(0, 100) + '...');
+                    
+                    // Update progress
+                    const progress = (chunkIndex / chunks.length) * 100;
+                    progressFill.style.width = `${progress}%`;
+                    progressText.textContent = `Processing chunk ${chunkIndex} of ${chunks.length} (${chunk.length} chars)...`;
+                    
+                    // Generate notes for this chunk
+                    const chunkNotes = await generateChunkNotes(chunk, chunkIndex, chunks.length);
+                    
+                    // Collect notes instead of immediately displaying
+                    if (chunkNotes) {
+                        allNotesSections.push(chunkNotes);
+                    }
+                    
+                    // Add small delay between chunks to show progress
+                    if (i < chunks.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                }
+                
+                // Hide progress bar
+                progressDiv.style.display = 'none';
+                
+                // Combine all notes into one comprehensive document
+                const combinedNotes = combineNoteSections(allNotesSections);
+                
+                // Display the combined notes as a single section
+                if (combinedNotes) {
+                    addCombinedNoteSection(combinedNotes);
+                }
+                
+            } catch (error) {
+                console.error('Error generating notes:', error);
+                alert(`Failed to generate notes: ${error.message}`);
+                
+                // Show placeholder again on error
+                placeholder.style.display = 'block';
+                progressDiv.style.display = 'none';
+                sectionsDiv.style.display = 'none';
+                
+            } finally {
+                // Restore button state
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = originalText;
+            }
+        }
+
+        function chunkTranscriptionByChars(text, maxChars) {
+            const chunks = [];
+            
+            for (let i = 0; i < text.length; i += maxChars) {
+                let chunk = text.slice(i, i + maxChars);
+                
+                // If we're not at the end and the chunk doesn't end with a space,
+                // try to break at the last space to avoid cutting words in half
+                if (i + maxChars < text.length && chunk[chunk.length - 1] !== ' ') {
+                    const lastSpaceIndex = chunk.lastIndexOf(' ');
+                    if (lastSpaceIndex > maxChars * 0.7) { // Only break if space is not too far back
+                        chunk = chunk.substring(0, lastSpaceIndex);
+                        i = i + lastSpaceIndex - maxChars + 1; // Adjust index for next iteration
+                    }
+                }
+                
+                chunks.push(chunk.trim());
+            }
+            
+            return chunks.filter(chunk => chunk.length > 0);
+        }
+
+        async function generateChunkNotes(chunkText, chunkIndex, totalChunks) {
+            try {
+                if (window.electronAPI && window.electronAPI.generateNotes) {
+                    const result = await window.electronAPI.generateNotes(chunkText, chunkIndex, totalChunks);
+                    
+                    if (result.success) {
+                        return result.notes;
+                    } else {
+                        throw new Error(result.error || `Failed to generate notes for chunk ${chunkIndex}`);
+                    }
+                } else {
+                    // Fallback demo notes when API not available
+                    return generateDemoNotes(chunkIndex);
+                }
+                
+            } catch (error) {
+                console.error(`Error generating notes for chunk ${chunkIndex}:`, error);
+                return generateDemoNotes(chunkIndex);
+            }
+        }
+
+        function generateDemoNotes(chunkIndex) {
+            // Demo notes for testing when API is not available
+            const demoNotes = [
+                {
+                    title: "Introduction and Overview",
+                    content: `
+                        <h4>Key Concepts:</h4>
+                        <ul>
+                            <li>Data science definition and scope</li>
+                            <li>Interdisciplinary nature of the field</li>
+                            <li>Historical context and evolution</li>
+                        </ul>
+                        <h4>Important Points:</h4>
+                        <ul>
+                            <li>Data science combines statistics, computer science, and domain expertise</li>
+                            <li>Modern data science emerged with the big data revolution</li>
+                            <li>Think of it as detective work with data as evidence</li>
+                        </ul>
+                    `
+                },
+                {
+                    title: "CRISP-DM Methodology",
+                    content: `
+                        <h4>Six Phases:</h4>
+                        <ul>
+                            <li>Business Understanding - Define problem and success criteria</li>
+                            <li>Data Understanding - Explore and examine available data</li>
+                            <li>Data Preparation - Clean and transform data (60-80% of time)</li>
+                            <li>Modeling - Apply statistical and ML algorithms</li>
+                            <li>Evaluation - Assess model performance and validity</li>
+                            <li>Deployment - Implement in production environment</li>
+                        </ul>
+                    `
+                },
+                {
+                    title: "Essential Skills and Tools",
+                    content: `
+                        <h4>Technical Skills:</h4>
+                        <ul>
+                            <li>Programming: Python (pandas, NumPy, scikit-learn), R, SQL</li>
+                            <li>Statistics: Probability, hypothesis testing, experimental design</li>
+                            <li>Machine Learning: Supervised, unsupervised, reinforcement learning</li>
+                        </ul>
+                        <h4>Soft Skills:</h4>
+                        <ul>
+                            <li>Analytical thinking and problem-solving</li>
+                            <li>Communication and data visualization</li>
+                            <li>Domain expertise in specific industries</li>
+                        </ul>
+                    `
+                }
+            ];
+            
+            return demoNotes[Math.min(chunkIndex - 1, demoNotes.length - 1)];
+        }
+
+        function combineNoteSections(notesSections) {
+            if (!notesSections || notesSections.length === 0) {
+                return null;
+            }
+            
+            // Create a comprehensive title
+            const mainTitle = sessionData.title + " - Comprehensive Notes";
+            
+            // Combine all content sections
+            let combinedContent = '<div class="combined-notes-intro">';
+            combinedContent += '<p><em>AI-generated comprehensive notes from session transcript</em></p>';
+            combinedContent += '</div>';
+            
+            // Add each section's content with section headers
+            notesSections.forEach((section, index) => {
+                combinedContent += `<div class="note-subsection">`;
+                combinedContent += `<h3 class="subsection-title">${section.title}</h3>`;
+                combinedContent += `<div class="subsection-content">${section.content}</div>`;
+                combinedContent += `</div>`;
+            });
+            
+            return {
+                title: mainTitle,
+                content: combinedContent
+            };
+        }
+        
+        function addCombinedNoteSection(combinedNotes) {
+            const sectionsDiv = document.getElementById('notes-sections');
+            
+            const sectionDiv = document.createElement('div');
+            sectionDiv.className = 'note-section combined-notes';
+            sectionDiv.innerHTML = `
+                <div class="note-section-header">
+                    <h3 class="note-section-title">${combinedNotes.title}</h3>
+                    <span class="note-section-timestamp">Complete Notes</span>
+                </div>
+                <div class="note-section-content">
+                    ${combinedNotes.content}
+                </div>
+            `;
+            
+            sectionsDiv.appendChild(sectionDiv);
+            
+            // Scroll to the section
+            sectionDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            console.log('✅ Combined notes displayed successfully');
+        }
+
+        async function generateSummary() {
+            const generateBtn = document.getElementById('generate-summary-btn');
+            const originalText = generateBtn.innerHTML;
+            const progressDiv = document.getElementById('summary-progress');
+            const progressFill = document.getElementById('summary-progress-fill');
+            const progressText = document.getElementById('summary-progress-text');
+            const placeholder = document.getElementById('summary-placeholder');
+            const sectionsDiv = document.getElementById('summary-sections');
+            
+            try {
+                // Show loading state
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
+                        <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
+                    </svg>
+                    Analyzing...
+                `;
+                
+                // Hide placeholder and show progress
+                placeholder.style.display = 'none';
+                progressDiv.style.display = 'block';
+                
+                // Prepare transcription text
+                const transcriptionText = sessionData.transcript
+                    .map(entry => `[${entry.timestamp}] ${entry.text}`)
+                    .join('\n');
+                
+                if (!transcriptionText.trim()) {
+                    throw new Error('No transcription data available to generate summary');
+                }
+                
+                console.log(`🔄 Generating AI summary for ${transcriptionText.length} character transcript...`);
+                
+                // Animate progress
+                progressText.textContent = 'Analyzing transcript content...';
+                progressFill.style.width = '30%';
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                progressText.textContent = 'Extracting key insights...';
+                progressFill.style.width = '60%';
+                
+                // Generate summary using AI
+                const summaryResult = await generateAISummary(transcriptionText);
+                
+                progressText.textContent = 'Formatting results...';
+                progressFill.style.width = '90%';
+                
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // Hide progress bar
+                progressDiv.style.display = 'none';
+                
+                // Display summary
+                if (summaryResult) {
+                    displayAISummary(summaryResult);
+                    sectionsDiv.style.display = 'block';
+                }
+                
+                progressFill.style.width = '100%';
+                console.log('✅ Summary generated successfully');
+                
+            } catch (error) {
+                console.error('Error generating summary:', error);
+                alert(`Failed to generate summary: ${error.message}`);
+                
+                // Show placeholder again on error
+                placeholder.style.display = 'block';
+                progressDiv.style.display = 'none';
+                
+            } finally {
+                // Restore button state
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = originalText;
+            }
+        }
+
+        async function generateAISummary(transcriptionText) {
+            try {
+                if (window.electronAPI && window.electronAPI.generateSummary) {
+                    const result = await window.electronAPI.generateSummary(transcriptionText);
+                    
+                    if (result.success) {
+                        return result.summary;
+                    } else {
+                        throw new Error(result.error || 'Failed to generate summary');
+                    }
+                } else {
+                    // Fallback demo summary when API not available
+                    return generateDemoSummary();
+                }
+                
+            } catch (error) {
+                console.error('Error generating AI summary:', error);
+                return generateDemoSummary();
+            }
+        }
+
+        function generateDemoSummary() {
+            // Demo summary for testing when API is not available
+            return {
+                overview: "This comprehensive lecture introduces data science as an interdisciplinary field combining statistics, mathematics, computer science, and domain expertise. Dr. Sarah Mitchell covers the historical evolution, CRISP-DM methodology, essential skills, real-world applications, and career guidance for aspiring data scientists.",
+                keyPoints: [
+                    "Definition: Data science combines statistics, mathematics, computer science, and domain expertise to extract meaningful insights",
+                    "Methodology: CRISP-DM provides a structured 6-phase approach from business understanding through deployment",
+                    "Technical Skills: Python and R are the dominant programming languages with extensive data science ecosystems",
+                    "Process Reality: Data preparation typically consumes 60-80% of a data scientist's time in real projects",
+                    "Communication: Translating technical findings to stakeholders is crucial for business impact",
+                    "Domain Knowledge: Industry expertise significantly enhances analysis value and interpretation accuracy",
+                    "Applications: Real-world use cases span healthcare diagnostics, business intelligence, and environmental modeling"
+                ],
+                actionItems: [
+                    "Start learning Python fundamentals and data science libraries",
+                    "Build a strong foundation in statistics and probability theory",
+                    "Practice with real datasets on platforms like Kaggle",
+                    "Develop a portfolio of data science projects",
+                    "Focus on developing communication and visualization skills"
+                ],
+                topics: [
+                    "Data Science Definition",
+                    "CRISP-DM Methodology",
+                    "Programming Skills",
+                    "Statistical Knowledge",
+                    "Machine Learning",
+                    "Healthcare Applications",
+                    "Business Intelligence",
+                    "Career Paths",
+                    "Industry Trends",
+                    "Ethics in AI"
+                ]
+            };
+        }
+
+        function displayAISummary(summary) {
+            // Display overview
+            document.getElementById('ai-summary-text').textContent = summary.overview;
+            
+            // Display key points as organized bullet points and action items as paragraph
+            const keyPointsDiv = document.getElementById('ai-key-points');
+            let combinedContent = '';
+            
+            // Add key points section as bullet points
+            if (summary.keyPoints && summary.keyPoints.length > 0) {
+                combinedContent += '<h4>Key Insights</h4>';
+                combinedContent += '<ul class="insights-list">';
+                summary.keyPoints.forEach(point => {
+                    combinedContent += `<li>${point}</li>`;
+                });
+                combinedContent += '</ul>';
+            }
+            
+            // Add action items section as paragraph
+            if (summary.actionItems && summary.actionItems.length > 0) {
+                combinedContent += '<h4>Recommended Actions</h4>';
+                combinedContent += '<p>' + summary.actionItems.join('. ') + '.</p>';
+            }
+            
+            keyPointsDiv.innerHTML = combinedContent;
+            
+            // Display topics as simple bullet points
+            const topicsList = document.getElementById('ai-topics');
+            topicsList.innerHTML = summary.topics.map(topic => `<li>${topic}</li>`).join('');
+        }
+
+        function addNoteSection(notes, chunkIndex) {
+            const sectionsDiv = document.getElementById('notes-sections');
+            
+            const sectionDiv = document.createElement('div');
+            sectionDiv.className = 'note-section';
+            sectionDiv.innerHTML = `
+                <div class="note-section-header">
+                    <h3 class="note-section-title">${notes.title}</h3>
+                    <span class="note-section-timestamp">Section ${chunkIndex}</span>
+                </div>
+                <div class="note-section-content">
+                    ${notes.content}
+                </div>
+            `;
+            
+            sectionsDiv.appendChild(sectionDiv);
+            
+            // Scroll to the new section
+            sectionDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        async function generateFlashcards() {
+            const generateBtn = event.target;
+            const originalText = generateBtn.innerHTML;
+            
+            try {
+                // Show loading state
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
+                        <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
+                    </svg>
+                    Generating...
+                `;
+                
+                // Prepare transcription text
+                const transcriptionText = sessionData.transcript
+                    .map(entry => entry.text)
+                    .join(' ');
+                
+                if (!transcriptionText.trim()) {
+                    throw new Error('No transcription data available to generate flashcards');
+                }
+                
+                // Call the AI service
+                if (window.electronAPI && window.electronAPI.generateFlashcards) {
+                    const result = await window.electronAPI.generateFlashcards(transcriptionText);
+                    
+                    if (result.success && result.flashcards) {
+                        sessionData.flashcards = result.flashcards;
+                        alert(`Successfully generated ${result.flashcards.length} flashcards!`);
+                    } else {
+                        throw new Error(result.error || 'Failed to generate flashcards');
+                    }
+                } else {
+                    throw new Error('Flashcard generation not available');
+                }
+                
+            } catch (error) {
+                console.error('Error generating flashcards:', error);
+                alert(`Failed to generate flashcards: ${error.message}`);
+                
+                // Fallback to demo flashcards
+                sessionData.flashcards = [
+                    {
+                        question: 'What is supervised learning?',
+                        answer: 'Supervised learning is a type of machine learning where models are trained using labeled data with input-output pairs.'
+                    },
+                    {
+                        question: 'Name three common supervised learning algorithms.',
+                        answer: 'Linear regression, decision trees, and neural networks are common supervised learning algorithms.'
+                    },
+                    {
+                        question: 'What type of data does unsupervised learning use?',
+                        answer: 'Unsupervised learning uses unlabeled data to find patterns and structures without known outputs.'
+                    }
+                ];
+            } finally {
+                // Restore button state
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = originalText;
+                checkFlashcards();
+            }
+        }
+
+        function exportAnki() {
+            // TODO: Generate Anki export file
+            alert('Exporting to Anki format... This will generate a .apkg file.');
+        }
+
+        function exportQuizlet() {
+            // TODO: Generate Quizlet export file
+            alert('Exporting to Quizlet format... This will generate a .txt file.');
+        }
+
+        function viewScreenshot(id) {
+            alert(`Viewing screenshot ${id}... This will open a modal or new window.`);
+        }
+
+        function flipCard(index) {
+            // TODO: Implement card flip animation
+            console.log('Flipping card', index);
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+
+        // Initialize theme
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.body.setAttribute('data-theme', 'dark');
+            }
+        }
+
+        // Initialize the page
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeTheme();
+            initializePage();
+        });
+    </script>
+</body>
+</html> 

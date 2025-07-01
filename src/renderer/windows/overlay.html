@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cognify Overlay</title>
+    <style>
+        :root {
+            --bg-primary: rgba(15, 23, 42, 0.95);
+            --bg-secondary: rgba(30, 41, 59, 0.95);
+            --bg-tertiary: rgba(51, 65, 85, 0.95);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --border-color: rgba(51, 65, 85, 0.8);
+            --accent-blue: #60a5fa;
+            --accent-blue-hover: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            color: var(--text-primary);
+            overflow: hidden;
+            -webkit-app-region: drag;
+        }
+
+        .overlay-container {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+            position: relative;
+            transition: all 0.3s ease;
+            min-width: 320px;
+            max-width: 400px;
+        }
+
+        .overlay-container.expanded {
+            max-width: 800px;
+            width: 800px;
+        }
+
+        .overlay-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            -webkit-app-region: drag;
+        }
+
+        .overlay-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .recording-indicator {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-red);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .overlay-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            -webkit-app-region: no-drag;
+        }
+
+        .control-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            -webkit-app-region: no-drag;
+        }
+
+        .control-btn:hover {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .control-btn.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .control-btn.danger {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+            color: white;
+        }
+
+        .control-btn.danger:hover {
+            opacity: 0.8;
+        }
+
+        .overlay-content {
+            display: flex;
+            height: 300px;
+            -webkit-app-region: no-drag;
+        }
+
+        .main-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 300px;
+        }
+
+        .side-panel {
+            width: 400px;
+            border-left: 1px solid var(--border-color);
+            display: none;
+            flex-direction: column;
+        }
+
+        .side-panel.open {
+            display: flex;
+        }
+
+        .transcription-area {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            background: var(--bg-secondary);
+        }
+
+        .transcription-line {
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            line-height: 1.4;
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .transcription-timestamp {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            margin-bottom: 0.25rem;
+        }
+
+        .action-buttons {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            flex: 1;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .action-btn.success {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: white;
+        }
+
+        .action-btn.success:hover {
+            opacity: 0.9;
+        }
+
+        .action-btn.danger {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+            color: white;
+        }
+
+        .action-btn.danger:hover {
+            opacity: 0.9;
+        }
+
+        /* Chat Panel */
+        .chat-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .chat-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 0.75rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        .message.user {
+            background: var(--accent-blue);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-input-area {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            resize: none;
+            height: 36px;
+            min-height: 36px;
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+        }
+
+        .send-btn {
+            background: var(--accent-blue);
+            border: 1px solid var(--accent-blue);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-btn:hover {
+            background: var(--accent-blue-hover);
+            border-color: var(--accent-blue-hover);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .empty-transcription {
+            text-align: center;
+            color: var(--text-tertiary);
+            font-size: 0.875rem;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .empty-icon {
+            width: 48px;
+            height: 48px;
+            fill: var(--text-tertiary);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        /* Scrollbar Styling */
+        .transcription-area::-webkit-scrollbar,
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .transcription-area::-webkit-scrollbar-track,
+        .chat-messages::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+        }
+
+        .transcription-area::-webkit-scrollbar-thumb,
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--text-tertiary);
+            border-radius: 3px;
+        }
+
+        .transcription-area::-webkit-scrollbar-thumb:hover,
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Animation for expanding */
+        .overlay-container {
+            transform-origin: top left;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-container" id="overlay-container">
+        <div class="overlay-header">
+            <div class="overlay-title">
+                <div class="recording-indicator" id="recording-indicator"></div>
+                <span id="session-title">Recording Session</span>
+            </div>
+            <div class="overlay-controls">
+                <button class="control-btn" onclick="toggleExpand()" id="expand-btn" title="Expand">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                    </svg>
+                </button>
+                <button class="control-btn" onclick="takeScreenshot()" title="Screenshot">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM5 17l3.5-4.5 2.5 3.01L14.5 11l4.5 6H5z"/>
+                    </svg>
+                </button>
+                <button class="control-btn" onclick="closeOverlay()" title="Close">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="overlay-content">
+            <div class="main-panel">
+                <div class="transcription-area" id="transcription-area">
+                    <div class="status-indicator">
+                        <div class="status-dot"></div>
+                        <span>Live transcription active</span>
+                    </div>
+                    
+                    <div class="empty-transcription" id="empty-transcription">
+                        <svg class="empty-icon" viewBox="0 0 24 24">
+                            <path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0 2c-4.411 0-8 3.589-8 8s3.589 8 8 8 8-3.589 8-8-3.589-8-8-8zm0 3c1.657 0 3 1.343 3 3 0 .756-.298 1.441-.781 1.948l-.219.252v.8c0 .552-.448 1-1 1s-1-.448-1-1v-.8c0-.265.105-.52.293-.707.378-.378.707-.878.707-1.493 0-.552-.448-1-1-1s-1 .448-1 1c0 .552-.448 1-1 1s-1-.448-1-1c0-1.657 1.343-3 3-3zm0 8c.552 0 1 .448 1 1s-.448 1-1 1-1-.448-1-1 .448-1 1-1z"/>
+                        </svg>
+                        <div>Waiting for audio...</div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn success" onclick="toggleRecording()" id="record-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                        <span id="record-text">Start</span>
+                    </button>
+                    <button class="action-btn" onclick="takeScreenshot()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM5 17l3.5-4.5 2.5 3.01L14.5 11l4.5 6H5z"/>
+                        </svg>
+                        Screenshot
+                    </button>
+                    <button class="action-btn danger" onclick="endSession()" id="end-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 6h12v12H6z"/>
+                        </svg>
+                        Done
+                    </button>
+                </div>
+            </div>
+
+            <div class="side-panel" id="side-panel">
+                <div class="chat-header">
+                    <h3 class="chat-title">AI Assistant</h3>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message ai">
+                        <div>Hi! I'm your AI assistant. I can help answer questions about your current session. What would you like to know?</div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <textarea class="chat-input" id="chat-input" placeholder="Ask about the current session..." rows="1"></textarea>
+                    <button class="send-btn" onclick="sendMessage()" id="send-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let isRecording = false;
+        let isExpanded = false;
+        let transcriptionData = [];
+        let sessionStartTime = null;
+        let recordingTimer = null;
+
+        // Initialize overlay
+        function initializeOverlay() {
+            const savedPosition = localStorage.getItem('overlay-position');
+            if (savedPosition) {
+                const { x, y } = JSON.parse(savedPosition);
+                window.moveTo(x, y);
+            }
+
+            // Auto-resize chat input
+            const chatInput = document.getElementById('chat-input');
+            chatInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+            });
+
+            // Enable Enter to send chat messages
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Start session automatically
+            startSession();
+        }
+
+        function startSession() {
+            sessionStartTime = new Date();
+            updateSessionTitle();
+            startRecordingTimer();
+        }
+
+        function updateSessionTitle() {
+            const title = document.getElementById('session-title');
+            if (sessionStartTime) {
+                const elapsed = Math.floor((new Date() - sessionStartTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                title.textContent = `Recording ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+
+        function startRecordingTimer() {
+            recordingTimer = setInterval(updateSessionTitle, 1000);
+        }
+
+        function toggleExpand() {
+            const container = document.getElementById('overlay-container');
+            const sidePanel = document.getElementById('side-panel');
+            const expandBtn = document.getElementById('expand-btn');
+            
+            isExpanded = !isExpanded;
+            
+            if (isExpanded) {
+                container.classList.add('expanded');
+                sidePanel.classList.add('open');
+                expandBtn.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+                    </svg>
+                `;
+                expandBtn.title = 'Collapse';
+            } else {
+                container.classList.remove('expanded');
+                sidePanel.classList.remove('open');
+                expandBtn.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                    </svg>
+                `;
+                expandBtn.title = 'Expand';
+            }
+        }
+
+        function toggleRecording() {
+            const recordBtn = document.getElementById('record-btn');
+            const recordText = document.getElementById('record-text');
+            const recordingIndicator = document.getElementById('recording-indicator');
+            
+            isRecording = !isRecording;
+            
+            if (isRecording) {
+                recordBtn.classList.remove('success');
+                recordBtn.classList.add('danger');
+                recordText.textContent = 'Stop';
+                recordingIndicator.style.display = 'block';
+                startRecording();
+            } else {
+                recordBtn.classList.remove('danger');
+                recordBtn.classList.add('success');
+                recordText.textContent = 'Start';
+                recordingIndicator.style.display = 'none';
+                stopRecording();
+            }
+        }
+
+        function startRecording() {
+            // Clear empty state
+            document.getElementById('empty-transcription').style.display = 'none';
+            
+            // TODO: Start actual audio recording
+            console.log('Starting audio recording...');
+            
+            // Simulate live transcription for demo
+            simulateTranscription();
+        }
+
+        function stopRecording() {
+            // TODO: Stop actual audio recording
+            console.log('Stopping audio recording...');
+        }
+
+        function simulateTranscription() {
+            if (!isRecording) return;
+            
+            const sampleTexts = [
+                "Welcome to today's session on machine learning fundamentals.",
+                "We'll be exploring supervised and unsupervised learning algorithms.",
+                "Let's start with linear regression and its applications.",
+                "Decision trees are another powerful classification method.",
+                "Neural networks require large datasets for optimal performance."
+            ];
+            
+            const randomText = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+            addTranscriptionLine(randomText);
+            
+            // Continue simulation
+            setTimeout(() => {
+                if (isRecording) simulateTranscription();
+            }, 3000 + Math.random() * 5000);
+        }
+
+        function addTranscriptionLine(text) {
+            const area = document.getElementById('transcription-area');
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            const line = document.createElement('div');
+            line.className = 'transcription-line';
+            line.innerHTML = `
+                <div class="transcription-timestamp">${timestamp}</div>
+                <div>${text}</div>
+            `;
+            
+            area.appendChild(line);
+            area.scrollTop = area.scrollHeight;
+            
+            // Store for AI context
+            transcriptionData.push({ timestamp, text });
+        }
+
+        function takeScreenshot() {
+            // TODO: Implement screenshot capture
+            console.log('Taking screenshot...');
+            
+            // Visual feedback
+            const btn = event.target.closest('.action-btn') || event.target.closest('.control-btn');
+            const originalBg = btn.style.background;
+            btn.style.background = var(--accent-green);
+            setTimeout(() => {
+                btn.style.background = originalBg;
+            }, 200);
+            
+            // Mock notification
+            showNotification('Screenshot captured!');
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addChatMessage(message, 'user');
+            input.value = '';
+            input.style.height = 'auto';
+            
+            // Simulate AI response
+            setTimeout(() => {
+                const responses = [
+                    "Based on the current transcription, I can see you're discussing machine learning concepts. Would you like me to explain any specific algorithms?",
+                    "I noticed mentions of supervised learning. This involves training models with labeled data to make predictions.",
+                    "The session seems to cover fundamental ML concepts. Are there any particular aspects you'd like me to clarify?",
+                    "From what I've transcribed, you're covering key machine learning topics. I can help explain any of these concepts in more detail."
+                ];
+                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                addChatMessage(randomResponse, 'ai');
+            }, 1000);
+        }
+
+        function addChatMessage(text, sender) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const message = document.createElement('div');
+            message.className = `message ${sender}`;
+            message.textContent = text;
+            
+            messagesContainer.appendChild(message);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function endSession() {
+            if (confirm('Are you sure you want to end this session? This will stop recording and open the main application.')) {
+                // Stop recording if active
+                if (isRecording) {
+                    toggleRecording();
+                }
+                
+                // Clear timer
+                if (recordingTimer) {
+                    clearInterval(recordingTimer);
+                }
+                
+                // TODO: Save session data and open main app
+                console.log('Ending session and opening main app...');
+                
+                if (window.electronAPI) {
+                    window.electronAPI.endSession({
+                        startTime: sessionStartTime,
+                        duration: Math.floor((new Date() - sessionStartTime) / 1000),
+                        transcription: transcriptionData
+                    });
+                }
+                
+                closeOverlay();
+            }
+        }
+
+        function closeOverlay() {
+            // Save position
+            const position = { x: window.screenX, y: window.screenY };
+            localStorage.setItem('overlay-position', JSON.stringify(position));
+            
+            if (window.electronAPI) {
+                window.electronAPI.closeOverlay();
+            } else {
+                window.close();
+            }
+        }
+
+        function showNotification(message) {
+            // Create temporary notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: var(--accent-green);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 0.875rem;
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 2000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'r':
+                        e.preventDefault();
+                        toggleRecording();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        takeScreenshot();
+                        break;
+                    case 'e':
+                        e.preventDefault();
+                        toggleExpand();
+                        break;
+                }
+            }
+        });
+
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', initializeOverlay);
+
+        // Save position on move
+        window.addEventListener('beforeunload', () => {
+            const position = { x: window.screenX, y: window.screenY };
+            localStorage.setItem('overlay-position', JSON.stringify(position));
+        });
+    </script>
+</body>
+</html> 
