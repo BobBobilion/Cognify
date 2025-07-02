@@ -107,8 +107,13 @@
             align-items: center;
             justify-content: center;
             color: white;
-            font-weight: 700;
-            font-size: 1.125rem;
+            padding: 6px;
+        }
+        
+        .logo-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: white;
         }
 
         .logo-text {
@@ -347,6 +352,49 @@
             margin-bottom: 1rem;
         }
 
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            opacity: 0.6;
+            flex-shrink: 0;
+        }
+
+        .delete-btn:hover {
+            background: var(--danger-color);
+            color: white;
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .delete-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .delete-btn:disabled:hover {
+            background: transparent;
+            color: var(--text-tertiary);
+            transform: none;
+        }
+
+        .session-card:hover .delete-btn {
+            opacity: 1;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         .session-title {
             font-size: 1.125rem;
             font-weight: 600;
@@ -550,7 +598,19 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
-                    <div class="logo-icon">C</div>
+                    <div class="logo-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+                            <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+                            <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/>
+                            <path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/>
+                            <path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/>
+                            <path d="M3.477 10.896a4 4 0 0 1 .585-.396"/>
+                            <path d="M19.938 10.5a4 4 0 0 1 .585.396"/>
+                            <path d="M6 18a4 4 0 0 1-1.967-.516"/>
+                            <path d="M19.967 17.484A4 4 0 0 1 18 18"/>
+                        </svg>
+                    </div>
                     <div class="logo-text">Cognify</div>
                 </div>
         <button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle" title="Toggle theme">
@@ -643,14 +703,22 @@
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                         </svg>
                         <h3 class="empty-title">No sessions yet</h3>
-                        <p class="empty-description">Start your first recording to see your sessions here.</p>
-                        <button class="btn btn-large btn-success" onclick="startRecording()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <circle cx="12" cy="12" r="3"/>
-                                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
-                            </svg>
-                            Start Recording
-                        </button>
+                        <p class="empty-description">Start your first recording or add sample data to explore Cognify's features.</p>
+                        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                            <button class="btn btn-large btn-success" onclick="startRecording()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+                                </svg>
+                                Start Recording
+                            </button>
+                            <button class="btn btn-large" onclick="addSampleData()" id="sample-data-btn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                                </svg>
+                                Add Sample Data
+                            </button>
+                        </div>
             </div>
         </div>
         
@@ -677,11 +745,11 @@
             
             if (currentTheme === 'dark') {
                 body.removeAttribute('data-theme');
-                themeIcon.innerHTML = '<path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/>';
+                themeIcon.innerHTML = '<path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/>';
                 localStorage.setItem('theme', 'light');
             } else {
                 body.setAttribute('data-theme', 'dark');
-                themeIcon.innerHTML = '<path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/>';
+                themeIcon.innerHTML = '<path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/>';
                 localStorage.setItem('theme', 'dark');
             }
         }
@@ -693,9 +761,9 @@
             
             if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
                 document.body.setAttribute('data-theme', 'dark');
-                themeIcon.innerHTML = '<path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/>';
-            } else {
                 themeIcon.innerHTML = '<path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/>';
+            } else {
+                themeIcon.innerHTML = '<path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/>';
             }
         }
         
@@ -756,50 +824,30 @@
         }
 
         // Session management
-        function loadSessions() {
-            // Sample data for now - this will be loaded from Firebase later
-            sessions = [
-                {
-                    id: '1',
-                    title: 'Machine Learning Fundamentals',
-                    type: 'lecture',
-                    date: '2024-01-15',
-                    duration: '01:23:45',
-                    description: 'Introduction to supervised and unsupervised learning algorithms.',
-                    screenshots: 8,
-                    flashcards: 15
-                },
-                {
-                    id: '2',
-                    title: 'Weekly Team Standup',
-                    type: 'zoom',
-                    date: '2024-01-14',
-                    duration: '00:32:15',
-                    description: 'Sprint planning and progress updates discussion.',
-                    screenshots: 3,
-                    flashcards: 7
-                },
-                {
-                    id: '3',
-                    title: 'Python Tutorial Series',
-                    type: 'youtube',
-                    date: '2024-01-13',
-                    duration: '02:15:30',
-                    description: 'Complete Python programming tutorial for beginners.',
-                    screenshots: 12,
-                    flashcards: 25
-                },
-                {
-                    id: '4',
-                    title: 'Introduction to Data Science',
-                    type: 'lecture',
-                    date: '2024-01-16',
-                    duration: '00:47:30',
-                    description: 'Comprehensive overview of data science fundamentals, CRISP-DM methodology, and essential skills for aspiring data scientists.',
-                    screenshots: 12,
-                    flashcards: 35
+        async function loadSessions() {
+            try {
+                if (currentUser && window.electronAPI) {
+                    // Load sessions from Firebase for authenticated user
+                    const result = await window.electronAPI.loadUserSessions();
+                    if (result.success) {
+                        sessions = result.sessions.map(session => ({
+                            ...session,
+                            screenshots: session.screenshots?.length || 0,
+                            flashcards: session.flashcards?.length || 0
+                        }));
+                        console.log(`Loaded ${sessions.length} sessions from Firebase`);
+                    } else {
+                        console.error('Failed to load sessions:', result.error);
+                        sessions = [];
+                    }
+                } else {
+                    // No user signed in or no Firebase connection - use empty array
+                    sessions = [];
                 }
-            ];
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                sessions = [];
+            }
             
             renderSessions();
         }
@@ -833,9 +881,9 @@
             emptyState.style.display = 'none';
             
             grid.innerHTML = filteredSessions.map(session => `
-                <div class="session-card" onclick="openSession('${session.id}')">
+                <div class="session-card">
                     <div class="session-header">
-                        <div>
+                        <div onclick="openSession('${session.id}')" style="flex: 1; cursor: pointer;">
                             <h3 class="session-title">${session.title}</h3>
                             <div class="session-meta">
                                 <span class="session-badge ${session.type}">${session.type}</span>
@@ -843,20 +891,27 @@
                                 <span>${session.duration}</span>
                             </div>
                         </div>
+                        <button class="delete-btn" onclick="deleteSession('${session.id}', '${session.title.replace(/'/g, "\\'")}', event)" title="Delete session">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                            </svg>
+                        </button>
                     </div>
-                    <p class="session-description">${session.description}</p>
-                    <div class="session-stats">
-                        <div class="stat-item">
-                            <svg class="stat-icon" viewBox="0 0 24 24">
-                                <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM5 17l3.5-4.5 2.5 3.01L14.5 11l4.5 6H5z"/>
-                            </svg>
-                            ${session.screenshots} screenshots
-                        </div>
-                        <div class="stat-item">
-                            <svg class="stat-icon" viewBox="0 0 24 24">
-                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                            </svg>
-                            ${session.flashcards} flashcards
+                    <div onclick="openSession('${session.id}')" style="cursor: pointer;">
+                        <p class="session-description">${session.description}</p>
+                        <div class="session-stats">
+                            <div class="stat-item">
+                                <svg class="stat-icon" viewBox="0 0 24 24">
+                                    <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM5 17l3.5-4.5 2.5 3.01L14.5 11l4.5 6H5z"/>
+                                </svg>
+                                ${session.screenshots} screenshots
+                            </div>
+                            <div class="stat-item">
+                                <svg class="stat-icon" viewBox="0 0 24 24">
+                                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                                </svg>
+                                ${session.flashcards} flashcards
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -916,8 +971,109 @@
                 alert('Sign out error: ' + error.message);
             }
         }
+
+        async function addSampleData() {
+            const btn = document.getElementById('sample-data-btn');
+            const originalText = btn.innerHTML;
+            
+            try {
+                // Show loading state
+                btn.disabled = true;
+                btn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
+                        <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
+                    </svg>
+                    Seeding Data...
+                `;
+                
+                if (!currentUser) {
+                    alert('Please sign in first to add sample data to your account.');
+                    return;
+                }
+                
+                const result = await window.electronAPI.seedSampleData();
+                
+                if (result.success) {
+                    alert(`🎉 Success! Added ${result.seededCount} sample sessions to your account. You can now explore Cognify's AI features like generating flashcards and summaries!`);
+                    // Refresh sessions will happen automatically via IPC event
+                } else {
+                    alert(`Failed to add sample data: ${result.error}`);
+                }
+                
+            } catch (error) {
+                console.error('Error adding sample data:', error);
+                alert(`Error adding sample data: ${error.message}`);
+            } finally {
+                // Restore button state
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function deleteSession(sessionId, sessionTitle, event) {
+            // Stop event propagation to prevent opening session
+            event.stopPropagation();
+            
+            // Show confirmation dialog
+            const confirmed = confirm(
+                `Are you sure you want to delete "${sessionTitle}"?\n\n` +
+                `This will permanently remove:\n` +
+                `• All transcripts and recordings\n` +
+                `• AI-generated summaries and notes\n` +
+                `• Flashcards and screenshots\n\n` +
+                `This action cannot be undone.`
+            );
+            
+            if (!confirmed) {
+                return;
+            }
+            
+            // Find the delete button to show loading state
+            const deleteBtn = event.target.closest('.delete-btn');
+            const originalContent = deleteBtn.innerHTML;
+            
+            try {
+                // Show loading state on delete button
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
+                        <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
+                    </svg>
+                `;
+                
+                if (!currentUser) {
+                    alert('You must be signed in to delete sessions.');
+                    return;
+                }
+                
+                // Call Firebase delete
+                const result = await window.electronAPI.deleteSession(sessionId);
+                
+                if (result.success) {
+                    console.log(`✅ Successfully deleted session: ${sessionTitle}`);
+                    
+                    // Remove session from local array immediately for instant UI feedback
+                    sessions = sessions.filter(session => session.id !== sessionId);
+                    renderSessions();
+                    
+                    // Show success message
+                    alert(`Session "${sessionTitle}" has been deleted successfully.`);
+                } else {
+                    console.error('Failed to delete session:', result.error);
+                    alert(`Failed to delete session: ${result.error}`);
+                }
+                
+            } catch (error) {
+                console.error('Error deleting session:', error);
+                alert(`Error deleting session: ${error.message}`);
+            } finally {
+                // Restore button state
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalContent;
+            }
+        }
         
-        function updateAuthUI(user) {
+        async function updateAuthUI(user) {
             const userInfo = document.getElementById('user-info');
             const userEmail = document.getElementById('user-email');
             const userAvatar = document.getElementById('user-avatar');
@@ -931,30 +1087,44 @@
                 userAvatar.textContent = user.email.charAt(0).toUpperCase();
                 signInBtn.style.display = 'none';
                 signOutBtn.style.display = 'block';
+                
+                // Load user's sessions when they sign in
+                await loadSessions();
             } else {
                 currentUser = null;
                 userInfo.style.display = 'none';
                 signInBtn.style.display = 'block';
                 signOutBtn.style.display = 'none';
+                
+                // Clear sessions when user signs out
+                sessions = [];
+                renderSessions();
             }
         }
         
         // Initialize the app
         window.addEventListener('DOMContentLoaded', async () => {
             initializeTheme();
-            loadSessions();
             
             try {
                 const user = await window.electronAPI.getCurrentUser();
-                updateAuthUI(user);
+                await updateAuthUI(user);
             } catch (error) {
                 console.error('Failed to get current user:', error);
+                // Fallback: show empty sessions if no user
+                await loadSessions();
             }
             
             if (window.electronAPI) {
-            window.electronAPI.onAuthStateChanged((user) => {
-                updateAuthUI(user);
-            });
+                window.electronAPI.onAuthStateChanged(async (user) => {
+                    await updateAuthUI(user);
+                });
+                
+                // Listen for sessions update events (e.g., after seeding sample data)
+                window.electronAPI.onSessionsUpdated && window.electronAPI.onSessionsUpdated(async () => {
+                    console.log('Sessions updated, refreshing...');
+                    await loadSessions();
+                });
             }
         });
         

@@ -840,7 +840,7 @@
                 </svg>
             </button>
             <div class="session-info">
-                <h1 id="session-title">Session Title</h1>
+                <h1 id="session-title" onclick="startInlineEdit()" style="cursor: pointer; position: relative;" title="Click to edit">Session Title</h1>
                 <div class="session-meta">
                     <span class="session-badge" id="session-badge">meeting</span>
                     <span id="session-date">Jan 15, 2024</span>
@@ -848,14 +848,7 @@
                 </div>
             </div>
         </div>
-        <div class="header-actions">
-            <button class="btn" onclick="renameSession()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                </svg>
-                Rename
-            </button>
-        </div>
+
     </div>
 
     <div class="container">
@@ -1020,7 +1013,8 @@
     </div>
 
     <script>
-        // All session data
+        // Legacy hardcoded session data (kept for reference/fallback)
+        // Now loading from Firebase instead
         const allSessionData = {
             '1': {
             id: '1',
@@ -1279,20 +1273,58 @@
             return urlParams.get('sessionId') || '1'; // Default to session 1 if no parameter
         }
 
-        function loadSessionData() {
+        async function loadSessionData() {
             const sessionId = getSessionIdFromUrl();
-            sessionData = allSessionData[sessionId];
             
-            if (!sessionData) {
-                // Fallback to first session if ID not found
-                sessionData = allSessionData['1'];
-                console.warn(`Session ${sessionId} not found, defaulting to session 1`);
+            try {
+                if (window.electronAPI && sessionId) {
+                    // Load session from Firebase
+                    const result = await window.electronAPI.getSession(sessionId);
+                    if (result.success) {
+                        sessionData = result.session;
+                        console.log('Loaded session from Firebase:', sessionData.title);
+                    } else {
+                        console.error('Failed to load session from Firebase:', result.error);
+                        // Fallback to demo data for development
+                        sessionData = getDemoSessionData();
+                    }
+                } else {
+                    console.warn('No session ID provided or electronAPI not available');
+                    sessionData = getDemoSessionData();
+                }
+            } catch (error) {
+                console.error('Error loading session data:', error);
+                sessionData = getDemoSessionData();
             }
         }
+        
+        function getDemoSessionData() {
+            // Fallback demo data for development/testing
+            return {
+                id: 'demo',
+                title: 'Demo Session',
+                type: 'lecture',
+                date: new Date().toISOString().split('T')[0],
+                duration: '00:30:00',
+                description: 'Demo session for testing purposes',
+                transcript: [
+                    {
+                        timestamp: '00:00:15',
+                        text: 'This is a demo session transcript. You can test the AI features with this content.'
+                    }
+                ],
+                summary: '',
+                keyPoints: [],
+                actionItems: [],
+                flashcards: [],
+                notes: [],
+                screenshots: []
+            };
+        }
 
-        function initializePage() {
+        async function initializePage() {
             // Load the correct session data first
-            loadSessionData();
+            await loadSessionData();
             
             // Load session data into the page
             document.getElementById('session-title').textContent = sessionData.title;
@@ -1304,6 +1336,8 @@
             loadTranscript();
             loadScreenshots();
             checkFlashcards();
+            checkExistingSummary();
+            checkExistingNotes();
         }
 
         function loadTranscript() {
@@ -1336,14 +1370,125 @@
             const grid = document.getElementById('flashcards-grid');
             const generateSection = document.getElementById('generate-flashcards');
             
-            if (sessionData.flashcards.length === 0) {
-                grid.style.display = 'none';
-                generateSection.style.display = 'block';
-            } else {
+            if (sessionData.flashcards && sessionData.flashcards.length > 0) {
                 grid.style.display = 'grid';
                 generateSection.style.display = 'none';
                 loadFlashcards();
+            } else {
+                grid.style.display = 'none';
+                generateSection.style.display = 'block';
             }
+        }
+
+        function checkExistingSummary() {
+            const placeholder = document.getElementById('summary-placeholder');
+            const sectionsDiv = document.getElementById('summary-sections');
+            const generateBtn = document.getElementById('generate-summary-btn');
+            
+            // Check if we have existing summary data
+            if (sessionData.summary && sessionData.summary.trim()) {
+                console.log('Found existing summary, displaying...');
+                placeholder.style.display = 'none';
+                sectionsDiv.style.display = 'block';
+                
+                // Update button to show regeneration option
+                generateBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                    </svg>
+                    Regenerate Summary
+                `;
+                
+                // Create summary object from session data
+                const summaryData = {
+                    overview: sessionData.summary,
+                    keyPoints: sessionData.keyPoints || [],
+                    actionItems: sessionData.actionItems || [],
+                    topics: extractTopicsFromKeyPoints(sessionData.keyPoints || [])
+                };
+                
+                displayAISummary(summaryData);
+            } else {
+                // No existing summary, show placeholder
+                placeholder.style.display = 'block';
+                sectionsDiv.style.display = 'none';
+                
+                // Keep original button text
+                generateBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Generate Summary
+                `;
+            }
+        }
+
+        function checkExistingNotes() {
+            const placeholder = document.getElementById('notes-placeholder');
+            const sectionsDiv = document.getElementById('notes-sections');
+            const generateBtn = document.getElementById('generate-notes-btn');
+            
+            // Check if we have existing notes data
+            if (sessionData.notes && sessionData.notes.length > 0) {
+                console.log('Found existing notes, displaying...');
+                placeholder.style.display = 'none';
+                sectionsDiv.style.display = 'block';
+                
+                // Update button to show regeneration option
+                generateBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                    </svg>
+                    Regenerate Notes
+                `;
+                
+                // Clear any existing content
+                sectionsDiv.innerHTML = '';
+                
+                // Display each note section
+                sessionData.notes.forEach((note, index) => {
+                    addExistingNoteSection(note, index + 1);
+                });
+            } else {
+                // No existing notes, show placeholder
+                placeholder.style.display = 'block';
+                sectionsDiv.style.display = 'none';
+                
+                // Keep original button text
+                generateBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Generate Notes
+                `;
+            }
+        }
+
+        function extractTopicsFromKeyPoints(keyPoints) {
+            // Extract topic-like information from key points for display
+            return keyPoints.map(point => {
+                // Take first few words as topic
+                const words = point.split(' ').slice(0, 3);
+                return words.join(' ').replace(/[:.,-]/g, '');
+            }).filter(topic => topic.length > 0);
+        }
+
+        function addExistingNoteSection(note, index) {
+            const sectionsDiv = document.getElementById('notes-sections');
+            
+            const sectionDiv = document.createElement('div');
+            sectionDiv.className = 'note-section';
+            sectionDiv.innerHTML = `
+                <div class="note-section-header">
+                    <h3 class="note-section-title">${note.title}</h3>
+                    <span class="note-section-timestamp">Loaded from Firebase</span>
+                </div>
+                <div class="note-section-content">
+                    ${note.content}
+                </div>
+            `;
+            
+            sectionsDiv.appendChild(sectionDiv);
         }
 
         function loadFlashcards() {
@@ -1371,12 +1516,117 @@
             window.location.href = 'index.html';
         }
 
-        function renameSession() {
-            const newTitle = prompt('Enter new session title:', sessionData.title);
-            if (newTitle && newTitle.trim()) {
-                sessionData.title = newTitle.trim();
-                document.getElementById('session-title').textContent = sessionData.title;
-                // TODO: Save to Firebase
+
+
+        function startInlineEdit() {
+            const titleElement = document.getElementById('session-title');
+            const currentTitle = sessionData.title;
+            
+            // Create input element
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentTitle;
+            input.style.cssText = `
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: var(--text-primary);
+                background: var(--bg-primary);
+                border: 2px solid var(--accent-blue);
+                border-radius: 4px;
+                padding: 2px 8px;
+                margin: 0;
+                width: 100%;
+                max-width: 400px;
+                outline: none;
+            `;
+            
+            // Replace title with input
+            titleElement.style.display = 'none';
+            titleElement.parentNode.insertBefore(input, titleElement.nextSibling);
+            
+            // Focus and select all text
+            input.focus();
+            input.select();
+            
+            // Handle save on Enter or blur
+            const saveEdit = async () => {
+                const newTitle = input.value.trim();
+                if (newTitle && newTitle !== currentTitle) {
+                    await updateSessionTitle(newTitle);
+                } else {
+                    // Restore original title if no change or empty
+                    titleElement.style.display = 'block';
+                    input.remove();
+                }
+            };
+            
+            // Handle cancel on Escape
+            const cancelEdit = () => {
+                titleElement.style.display = 'block';
+                input.remove();
+            };
+            
+            // Event listeners
+            input.addEventListener('blur', saveEdit);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveEdit();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEdit();
+                }
+            });
+        }
+
+        async function updateSessionTitle(newTitle) {
+            const titleElement = document.getElementById('session-title');
+            const originalTitle = sessionData.title;
+            
+            try {
+                // Show loading state
+                titleElement.textContent = 'Updating...';
+                titleElement.style.opacity = '0.7';
+                
+                // Update local data
+                sessionData.title = newTitle;
+                
+                // Save to Firebase if available
+                if (sessionData.id && sessionData.id !== 'demo' && window.electronAPI) {
+                    const result = await window.electronAPI.updateSession(sessionData.id, { title: newTitle });
+                    if (!result.success) {
+                        throw new Error(result.error || 'Failed to save title to Firebase');
+                    }
+                    console.log('✅ Session title updated in Firebase');
+                }
+                
+                // Update UI
+                titleElement.textContent = newTitle;
+                titleElement.style.opacity = '1';
+                titleElement.style.display = 'block';
+                
+                // Remove input if it exists
+                const input = titleElement.nextSibling;
+                if (input && input.tagName === 'INPUT') {
+                    input.remove();
+                }
+                
+            } catch (error) {
+                console.error('Error updating session title:', error);
+                
+                // Restore original title on error
+                sessionData.title = originalTitle;
+                titleElement.textContent = originalTitle;
+                titleElement.style.opacity = '1';
+                titleElement.style.display = 'block';
+                
+                // Remove input if it exists
+                const input = titleElement.nextSibling;
+                if (input && input.tagName === 'INPUT') {
+                    input.remove();
+                }
+                
+                alert(`Failed to update title: ${error.message}`);
             }
         }
 
@@ -1511,7 +1761,20 @@
                 
                 // Display the combined notes as a single section
                 if (combinedNotes) {
+                    // Update local session data
+                    sessionData.notes = [combinedNotes];
+                    
                     addCombinedNoteSection(combinedNotes);
+                    
+                    // Save notes to Firebase
+                    if (sessionData.id && sessionData.id !== 'demo') {
+                        const saveResult = await window.electronAPI.saveNotes(sessionData.id, [combinedNotes]);
+                        if (saveResult.success) {
+                            console.log('Notes saved to Firebase');
+                        } else {
+                            console.error('Failed to save notes to Firebase:', saveResult.error);
+                        }
+                    }
                 }
                 
             } catch (error) {
@@ -1526,7 +1789,18 @@
             } finally {
                 // Restore button state
                 generateBtn.disabled = false;
-                generateBtn.innerHTML = originalText;
+                
+                // Update button text based on whether we have notes now
+                if (sessionData.notes && sessionData.notes.length > 0) {
+                    generateBtn.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                        </svg>
+                        Regenerate Notes
+                    `;
+                } else {
+                    generateBtn.innerHTML = originalText;
+                }
             }
         }
 
@@ -1742,6 +2016,14 @@
                 progressFill.style.width = '100%';
                 console.log('✅ Summary generated successfully');
                 
+                // Update button text to show regeneration option
+                generateBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                    </svg>
+                    Regenerate Summary
+                `;
+                
             } catch (error) {
                 console.error('Error generating summary:', error);
                 alert(`Failed to generate summary: ${error.message}`);
@@ -1753,7 +2035,11 @@
             } finally {
                 // Restore button state
                 generateBtn.disabled = false;
-                generateBtn.innerHTML = originalText;
+                
+                // Only restore original text if we don't have a summary (which would mean generation failed)
+                if (!sessionData.summary || !sessionData.summary.trim()) {
+                    generateBtn.innerHTML = originalText;
+                }
             }
         }
 
@@ -1763,6 +2049,26 @@
                     const result = await window.electronAPI.generateSummary(transcriptionText);
                     
                     if (result.success) {
+                        // Update local session data
+                        sessionData.summary = result.summary.overview;
+                        sessionData.keyPoints = result.summary.keyPoints;
+                        sessionData.actionItems = result.summary.actionItems;
+                        
+                        // Save summary to Firebase
+                        if (sessionData.id && sessionData.id !== 'demo') {
+                            const saveResult = await window.electronAPI.saveSummary(
+                                sessionData.id, 
+                                result.summary.overview,
+                                result.summary.keyPoints,
+                                result.summary.actionItems
+                            );
+                            if (saveResult.success) {
+                                console.log('Summary saved to Firebase');
+                            } else {
+                                console.error('Failed to save summary to Firebase:', saveResult.error);
+                            }
+                        }
+                        
                         return result.summary;
                     } else {
                         throw new Error(result.error || 'Failed to generate summary');
@@ -1774,7 +2080,14 @@
                 
             } catch (error) {
                 console.error('Error generating AI summary:', error);
-                return generateDemoSummary();
+                const demoSummary = generateDemoSummary();
+                
+                // Update local session data even for demo
+                sessionData.summary = demoSummary.overview;
+                sessionData.keyPoints = demoSummary.keyPoints;
+                sessionData.actionItems = demoSummary.actionItems;
+                
+                return demoSummary;
             }
         }
 
@@ -1894,6 +2207,17 @@
                     
                     if (result.success && result.flashcards) {
                         sessionData.flashcards = result.flashcards;
+                        
+                        // Save flashcards to Firebase
+                        if (sessionData.id && sessionData.id !== 'demo') {
+                            const saveResult = await window.electronAPI.saveFlashcards(sessionData.id, result.flashcards);
+                            if (saveResult.success) {
+                                console.log('Flashcards saved to Firebase');
+                            } else {
+                                console.error('Failed to save flashcards to Firebase:', saveResult.error);
+                            }
+                        }
+                        
                         alert(`Successfully generated ${result.flashcards.length} flashcards!`);
                     } else {
                         throw new Error(result.error || 'Failed to generate flashcards');
@@ -1929,14 +2253,179 @@
             }
         }
 
-        function exportAnki() {
-            // TODO: Generate Anki export file
-            alert('Exporting to Anki format... This will generate a .apkg file.');
+        async function exportAnki() {
+            try {
+                if (!sessionData.flashcards || sessionData.flashcards.length === 0) {
+                    alert('No flashcards available to export. Please generate flashcards first.');
+                    return;
+                }
+
+                const exportBtn = event.target;
+                const originalText = exportBtn.innerHTML;
+                
+                // Show loading state
+                exportBtn.disabled = true;
+                exportBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
+                        <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
+                    </svg>
+                    Exporting...
+                `;
+
+                // Generate Anki text format (Anki can import from tab-separated text files)
+                const ankiData = generateAnkiTextFormat(sessionData.flashcards, sessionData.title);
+                
+                // Create and download the file
+                const blob = new Blob([ankiData], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${sanitizeFilename(sessionData.title)}_flashcards.txt`;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                // Restore button
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = originalText;
+
+            } catch (error) {
+                console.error('Error exporting to Anki:', error);
+                alert(`Failed to export flashcards: ${error.message}`);
+                
+                // Restore button on error
+                const exportBtn = event.target;
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = exportBtn.dataset.originalText || 'Export to Anki';
+            }
         }
 
-        function exportQuizlet() {
-            // TODO: Generate Quizlet export file
-            alert('Exporting to Quizlet format... This will generate a .txt file.');
+        function generateAnkiTextFormat(flashcards, sessionTitle) {
+            // Anki import format: Front\tBack\tTags
+            let ankiText = '';
+            
+            // Add header comment
+            ankiText += `# Anki Flashcards Export\n`;
+            ankiText += `# Generated from: ${sessionTitle}\n`;
+            ankiText += `# Date: ${new Date().toLocaleDateString()}\n`;
+            ankiText += `# Total cards: ${flashcards.length}\n`;
+            ankiText += `# Import instructions: File → Import → Select this file → Check "Allow HTML in fields" → Import\n\n`;
+            
+            // Generate flashcards in tab-separated format
+            flashcards.forEach((card, index) => {
+                // Clean and format the question and answer
+                const question = cleanTextForAnki(card.question);
+                const answer = cleanTextForAnki(card.answer);
+                const tags = sanitizeFilename(sessionTitle).replace(/\s+/g, '_').toLowerCase();
+                
+                // Format: Front\tBack\tTags
+                ankiText += `${question}\t${answer}\t${tags}\n`;
+            });
+            
+            return ankiText;
+        }
+
+        function cleanTextForAnki(text) {
+            // Clean text for Anki import while preserving basic formatting
+            return text
+                .replace(/\t/g, ' ')        // Replace tabs with spaces
+                .replace(/\n+/g, '<br>')    // Convert newlines to HTML breaks
+                .replace(/"/g, '&quot;')    // Escape quotes
+                .trim();
+        }
+
+        function sanitizeFilename(filename) {
+            // Remove or replace invalid filename characters
+            return filename
+                .replace(/[<>:"/\\|?*]/g, '_')  // Replace invalid chars with underscore
+                .replace(/\s+/g, '_')           // Replace spaces with underscore
+                .replace(/_+/g, '_')            // Replace multiple underscores with single
+                .slice(0, 100);                // Limit length
+        }
+
+        async function exportQuizlet() {
+            try {
+                if (!sessionData.flashcards || sessionData.flashcards.length === 0) {
+                    alert('No flashcards available to export. Please generate flashcards first.');
+                    return;
+                }
+
+                const exportBtn = event.target;
+                const originalText = exportBtn.innerHTML;
+                
+                // Show loading state
+                exportBtn.disabled = true;
+                exportBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
+                        <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
+                    </svg>
+                    Exporting...
+                `;
+
+                // Generate Quizlet text format
+                const quizletData = generateQuizletTextFormat(sessionData.flashcards, sessionData.title);
+                
+                // Create and download the file
+                const blob = new Blob([quizletData], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${sanitizeFilename(sessionData.title)}_quizlet.txt`;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                // Restore button
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = originalText;
+
+            } catch (error) {
+                console.error('Error exporting to Quizlet:', error);
+                alert(`Failed to export flashcards: ${error.message}`);
+                
+                // Restore button on error
+                const exportBtn = event.target;
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = exportBtn.dataset.originalText || 'Export to Quizlet';
+            }
+        }
+
+        function generateQuizletTextFormat(flashcards, sessionTitle) {
+            // Quizlet import format: Term\tDefinition (tab-separated)
+            let quizletText = '';
+            
+            // Add header comment (Quizlet will ignore lines starting with #)
+            quizletText += `# Quizlet Study Set Export\n`;
+            quizletText += `# Generated from: ${sessionTitle}\n`;
+            quizletText += `# Date: ${new Date().toLocaleDateString()}\n`;
+            quizletText += `# Total terms: ${flashcards.length}\n\n`;
+            
+            // Generate flashcards in tab-separated format
+            flashcards.forEach((card) => {
+                // Clean and format the question and answer for Quizlet
+                const term = cleanTextForQuizlet(card.question);
+                const definition = cleanTextForQuizlet(card.answer);
+                
+                // Format: Term\tDefinition
+                quizletText += `${term}\t${definition}\n`;
+            });
+            
+            return quizletText;
+        }
+
+        function cleanTextForQuizlet(text) {
+            // Clean text for Quizlet import (simpler than Anki)
+            return text
+                .replace(/\t/g, ' ')      // Replace tabs with spaces
+                .replace(/\n+/g, ' ')     // Replace newlines with spaces (Quizlet uses single line)
+                .replace(/\s+/g, ' ')     // Normalize whitespace
+                .trim();
         }
 
         function viewScreenshot(id) {
@@ -1968,9 +2457,9 @@
         }
 
         // Initialize the page
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             initializeTheme();
-            initializePage();
+            await initializePage();
         });
     </script>
 </body>

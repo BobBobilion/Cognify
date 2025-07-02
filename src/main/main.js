@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain, globalShortcut, screen } = require('electro
 const path = require('path');
 const { auth } = require('../config/firebase-config');
 const { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } = require('firebase/auth');
+const firebaseDB = require('../utils/firebase-db');
+const sampleDataSeeder = require('../utils/sample-data-seeder');
 
 const OpenAI = require('openai');
 const fs = require('fs');
@@ -43,7 +45,7 @@ const createWindow = () => {
       enableRemoteModule: false,
       nodeIntegration: false
     },
-    icon: path.join(__dirname, '../../assets/icon.png'), // Optional: add an icon later
+    icon: path.join(__dirname, '../../assets/icon.svg'),
     titleBarStyle: 'default',
     show: false // Don't show until ready
   });
@@ -53,6 +55,7 @@ const createWindow = () => {
 
   // Show window when ready to prevent visual flash
   mainWindow.once('ready-to-show', () => {
+    mainWindow.maximize();
     mainWindow.show();
   });
 
@@ -97,10 +100,15 @@ const createOverlayWindow = () => {
     show: false
   });
 
-  overlayWindow.loadFile('src/renderer/windows/overlay-widget.html');
+  overlayWindow.loadFile('src/renderer/windows/overlay.html');
 
   overlayWindow.once('ready-to-show', () => {
     overlayWindow.show();
+    
+    // Start amplitude monitoring for the overlay
+    if (!audioMonitor) {
+      startAmplitudeMonitoring();
+    }
   });
 
   // Handle overlay window closed
@@ -109,6 +117,10 @@ const createOverlayWindow = () => {
     // Stop recording if overlay is closed
     if (audioRecorder) {
       stopAudioRecording();
+    }
+    // Stop amplitude monitoring if no other windows need it
+    if (audioMonitor && (!amplitudeMonitorWindow || amplitudeMonitorWindow.isDestroyed())) {
+      stopAmplitudeMonitoring();
     }
   });
 
@@ -165,7 +177,7 @@ const createAmplitudeMonitorWindow = () => {
       enableRemoteModule: false,
       nodeIntegration: false
     },
-    icon: path.join(__dirname, '../../assets/icon.png'),
+          icon: path.join(__dirname, '../../assets/icon.svg'),
     titleBarStyle: 'default',
     show: false
   });
@@ -203,14 +215,24 @@ const startAmplitudeMonitoring = async () => {
     // Set up callbacks to forward data to renderer
     audioMonitor.setCallbacks({
       onAmplitudeUpdate: (data) => {
+        // Send to amplitude monitor window
         if (amplitudeMonitorWindow && !amplitudeMonitorWindow.isDestroyed()) {
           amplitudeMonitorWindow.webContents.send('amplitude-update', data);
+        }
+        // Send to overlay window
+        if (overlayWindow && !overlayWindow.isDestroyed()) {
+          overlayWindow.webContents.send('amplitude-update', data);
         }
       },
       onError: (error) => {
         console.error('Audio monitoring error:', error);
+        // Send to amplitude monitor window
         if (amplitudeMonitorWindow && !amplitudeMonitorWindow.isDestroyed()) {
           amplitudeMonitorWindow.webContents.send('amplitude-error', error);
+        }
+        // Send to overlay window
+        if (overlayWindow && !overlayWindow.isDestroyed()) {
+          overlayWindow.webContents.send('amplitude-error', error);
         }
       }
     });
@@ -515,12 +537,10 @@ const calculateAudioLevel = (audioBuffer) => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  // Wait for Firebase auth to initialize before creating window
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    currentUser = user;
-    createWindow();
-    unsubscribe(); // Only need this for initial load
-  });
+  console.log('🚀 App ready, initializing authentication...');
+  
+  // Initialize authentication with proper persistence handling
+  initializeAuthentication();
 
   // Register global shortcuts
   globalShortcut.register('CommandOrControl+Shift+C', () => {
@@ -538,9 +558,79 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0 && mainWindow) {
+      mainWindow.show();
+    } else if (BrowserWindow.getAllWindows().length === 0) {
+      initializeAuthentication();
+    }
   });
 });
+
+// Enhanced authentication initialization with persistence handling
+const initializeAuthentication = () => {
+  let authInitialized = false;
+  let authTimeout;
+  
+  console.log('🔐 Waiting for Firebase Auth state restoration...');
+  
+  // Set up persistent auth state listener (don't unsubscribe)
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    
+    if (user) {
+      console.log(`✅ User authenticated: ${user.email} (persistence restored)`);
+    } else {
+      console.log('❌ No authenticated user found');
+    }
+    
+    // Send auth state to renderer if window exists
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('auth-state-changed', user ? { uid: user.uid, email: user.email } : null);
+    }
+    
+    // Handle initial auth state restoration
+    if (!authInitialized) {
+      authInitialized = true;
+      
+      // Clear the timeout since we got an auth state
+      if (authTimeout) {
+        clearTimeout(authTimeout);
+        authTimeout = null;
+      }
+      
+      // Create window with appropriate page
+      if (!mainWindow) {
+        createWindow();
+      } else {
+        // Window already exists, just load the appropriate page
+        checkAuthAndLoadPage();
+      }
+    } else {
+      // Subsequent auth state changes (login/logout during app use)
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        checkAuthAndLoadPage();
+      }
+    }
+  });
+  
+  // Fallback timeout in case auth state doesn't restore quickly
+  authTimeout = setTimeout(() => {
+    if (!authInitialized) {
+      console.log('⏱️ Auth state restoration timeout, proceeding with no user');
+      authInitialized = true;
+      currentUser = null;
+      
+      if (!mainWindow) {
+        createWindow();
+      } else {
+        checkAuthAndLoadPage();
+      }
+    }
+  }, 3000); // Wait up to 3 seconds for auth restoration
+  
+  // Keep the unsubscribe function available for cleanup
+  global.authUnsubscribe = unsubscribe;
+};
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
@@ -555,11 +645,20 @@ app.on('window-all-closed', () => {
 // Cleanup on app quit
 app.on('before-quit', () => {
   globalShortcut.unregisterAll();
+  
+  // Cleanup audio recording
   if (audioRecorder) {
     stopAudioRecording();
   }
+  
   // Stop amplitude monitoring
   stopAmplitudeMonitoring();
+  
+  // Cleanup Firebase auth listener
+  if (global.authUnsubscribe) {
+    global.authUnsubscribe();
+    console.log('🔐 Firebase auth listener cleaned up');
+  }
 });
 
 // Security: Prevent new window creation
@@ -572,57 +671,151 @@ app.on('web-contents-created', (event, contents) => {
 // Firebase Authentication Handlers
 ipcMain.handle('sign-in', async (event, email, password) => {
   try {
+    console.log(`🔐 Attempting sign in for: ${email}`);
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    currentUser = userCredential.user;
+    // Note: currentUser will be set by the onAuthStateChanged listener
+    // Note: Page redirect will be handled automatically by the auth state listener
     
-    // Redirect to main dashboard after successful sign-in
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.loadFile('src/renderer/windows/index.html');
-    }
-    
-    return { success: true, user: { uid: currentUser.uid, email: currentUser.email } };
+    console.log(`✅ Sign in successful for: ${email}`);
+    return { success: true, user: { uid: userCredential.user.uid, email: userCredential.user.email } };
   } catch (error) {
-    console.error('Sign in error:', error);
+    console.error('❌ Sign in error:', error);
     return { success: false, error: getFirebaseErrorMessage(error.code) };
   }
 });
 
 ipcMain.handle('sign-up', async (event, email, password) => {
   try {
+    console.log(`🔐 Attempting sign up for: ${email}`);
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    currentUser = userCredential.user;
+    // Note: currentUser will be set by the onAuthStateChanged listener
+    // Note: Page redirect will be handled automatically by the auth state listener
     
-    // Redirect to main dashboard after successful sign-up
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.loadFile('src/renderer/windows/index.html');
-    }
-    
+    console.log(`✅ Sign up successful for: ${email}`);
     return { success: true, user: { uid: userCredential.user.uid, email: userCredential.user.email } };
   } catch (error) {
-    console.error('Sign up error:', error);
+    console.error('❌ Sign up error:', error);
     return { success: false, error: getFirebaseErrorMessage(error.code) };
   }
 });
 
 ipcMain.handle('sign-out', async () => {
   try {
+    console.log('🔐 Attempting sign out...');
     await signOut(auth);
-    currentUser = null;
+    // Note: currentUser will be set to null by the onAuthStateChanged listener
+    // Note: Page redirect will be handled automatically by the auth state listener
     
-    // Redirect to auth/landing page after sign-out
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.loadFile('src/renderer/windows/auth.html');
-    }
-    
+    console.log('✅ Sign out successful');
     return { success: true };
   } catch (error) {
-    console.error('Sign out error:', error);
+    console.error('❌ Sign out error:', error);
     return { success: false, error: error.message };
   }
 });
 
 ipcMain.handle('get-current-user', () => {
   return currentUser ? { uid: currentUser.uid, email: currentUser.email } : null;
+});
+
+// Firebase Database Handlers
+ipcMain.handle('load-user-sessions', async (event) => {
+  if (!currentUser) {
+    return { success: false, error: 'User not authenticated', sessions: [] };
+  }
+  
+  try {
+    const result = await firebaseDB.getUserSessions(currentUser.uid);
+    return result;
+  } catch (error) {
+    console.error('Error loading user sessions:', error);
+    return { success: false, error: error.message, sessions: [] };
+  }
+});
+
+ipcMain.handle('get-session', async (event, sessionId) => {
+  try {
+    const result = await firebaseDB.getSession(sessionId);
+    return result;
+  } catch (error) {
+    console.error('Error getting session:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('update-session', async (event, sessionId, updates) => {
+  try {
+    const result = await firebaseDB.updateSession(sessionId, updates);
+    return result;
+  } catch (error) {
+    console.error('Error updating session:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('save-flashcards', async (event, sessionId, flashcards) => {
+  try {
+    const result = await firebaseDB.updateFlashcards(sessionId, flashcards);
+    return result;
+  } catch (error) {
+    console.error('Error saving flashcards:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('save-summary', async (event, sessionId, summary, keyPoints, actionItems) => {
+  try {
+    const result = await firebaseDB.updateSummary(sessionId, summary, keyPoints, actionItems);
+    return result;
+  } catch (error) {
+    console.error('Error saving summary:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('save-notes', async (event, sessionId, notes) => {
+  try {
+    const result = await firebaseDB.updateNotes(sessionId, notes);
+    return result;
+  } catch (error) {
+    console.error('Error saving notes:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('delete-session', async (event, sessionId) => {
+  try {
+    const result = await firebaseDB.deleteSession(sessionId);
+    return result;
+  } catch (error) {
+    console.error('Error deleting session:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('seed-sample-data', async (event) => {
+  if (!currentUser) {
+    return { success: false, error: 'User not authenticated' };
+  }
+  
+  try {
+    console.log('🌱 Starting sample data seeding for user:', currentUser.email);
+    const result = await sampleDataSeeder.seedUserData(currentUser.uid);
+    
+    if (result.success) {
+      console.log(`✅ Sample data seeded: ${result.seededCount}/${result.totalSessions} sessions`);
+      
+      // Refresh the main window to show new sessions
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('sessions-updated');
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error seeding sample data:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Window Management Handlers
@@ -657,14 +850,41 @@ ipcMain.handle('close-overlay', () => {
   }
 });
 
-ipcMain.handle('end-session', (event, sessionData) => {
+ipcMain.handle('end-session', async (event, sessionData) => {
   // Stop recording if active
   if (audioRecorder) {
     stopAudioRecording();
   }
   
-  // TODO: Save session data to Firebase
-  console.log('Session ended:', sessionData);
+  // Save session data to Firebase if user is authenticated
+  let savedSessionId = null;
+  if (currentUser && sessionData) {
+    try {
+      const result = await firebaseDB.saveSession(currentUser.uid, {
+        title: sessionData.title || 'Untitled Session',
+        type: sessionData.type || 'recording',
+        date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+        duration: sessionData.duration || '00:00:00',
+        description: sessionData.description || '',
+        transcript: sessionData.transcript || [],
+        summary: sessionData.summary || '',
+        keyPoints: sessionData.keyPoints || [],
+        actionItems: sessionData.actionItems || [],
+        flashcards: sessionData.flashcards || [],
+        notes: sessionData.notes || [],
+        screenshots: sessionData.screenshots || []
+      });
+      
+      if (result.success) {
+        savedSessionId = result.sessionId;
+        console.log('Session saved to Firebase with ID:', savedSessionId);
+      } else {
+        console.error('Failed to save session to Firebase:', result.error);
+      }
+    } catch (error) {
+      console.error('Error saving session to Firebase:', error);
+    }
+  }
   
   // Close overlay and show main window
   if (overlayWindow) {
@@ -675,9 +895,14 @@ ipcMain.handle('end-session', (event, sessionData) => {
   if (mainWindow) {
     mainWindow.show();
     mainWindow.focus();
-    // Refresh sessions list
-    mainWindow.webContents.send('session-ended', sessionData);
+    // Refresh sessions list with the new session ID
+    mainWindow.webContents.send('session-ended', { 
+      ...sessionData, 
+      id: savedSessionId 
+    });
   }
+  
+  return { success: true, sessionId: savedSessionId };
 });
 
 // Session Detail Handlers
@@ -722,6 +947,56 @@ ipcMain.handle('stop-amplitude-monitoring', () => {
   }
 });
 
+// Live AI Chat Handler
+ipcMain.handle('chat-with-ai', async (event, message) => {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful AI assistant for a learning application. You help students understand their session content, answer questions about their transcriptions, and provide educational support. Be concise, friendly, and educational."
+        },
+        {
+          role: "user",
+          content: message
+        }
+      ],
+      max_tokens: 300,
+      temperature: 0.7
+    });
+
+    return {
+      success: true,
+      message: response.choices[0].message.content
+    };
+  } catch (error) {
+    console.error('OpenAI API error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+});
+
+// Window management handlers
+ipcMain.handle('resize-window', (event, width, height) => {
+  try {
+    const webContents = event.sender;
+    const window = BrowserWindow.fromWebContents(webContents);
+    
+    if (window) {
+      window.setSize(width, height);
+      return { success: true };
+    } else {
+      return { success: false, error: 'Window not found' };
+    }
+  } catch (error) {
+    console.error('Failed to resize window:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Audio Recording Handlers
 ipcMain.handle('start-audio-recording', async () => {
   try {
@@ -762,7 +1037,7 @@ ipcMain.handle('generate-flashcards', async (event, transcriptionText) => {
       messages: [
         {
           role: 'system',
-          content: 'You are an expert at creating educational flashcards. Generate high-quality question-answer pairs from the provided transcription text. Focus on key concepts, definitions, and important facts. Return the flashcards in JSON format with "question" and "answer" fields.'
+          content: 'You are an expert at creating educational flashcards. Generate high-quality question-answer pairs from the provided transcription text. Focus on key concepts, definitions, and important facts. Return ONLY a JSON array of objects with "question" and "answer" fields. Do not include any other text or formatting.'
         },
         {
           role: 'user',

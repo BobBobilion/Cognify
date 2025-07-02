@@ -26,6 +26,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openAmplitudeMonitor: () => ipcRenderer.invoke('open-amplitude-monitor'),
   startAmplitudeMonitoring: () => ipcRenderer.invoke('start-amplitude-monitoring'),
   stopAmplitudeMonitoring: () => ipcRenderer.invoke('stop-amplitude-monitoring'),
+  onAmplitudeUpdate: (callback) => ipcRenderer.on('amplitude-update', (event, data) => callback(data)),
+  onAmplitudeError: (callback) => ipcRenderer.on('amplitude-error', (event, data) => callback(data)),
+  removeAmplitudeListeners: () => {
+    ipcRenderer.removeAllListeners('amplitude-update');
+    ipcRenderer.removeAllListeners('amplitude-error');
+  },
   
   // Audio recording
   startAudioRecording: () => ipcRenderer.invoke('start-audio-recording'),
@@ -38,6 +44,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   generateFlashcards: (transcriptionText) => ipcRenderer.invoke('generate-flashcards', transcriptionText),
   generateNotes: (chunkText, chunkIndex, totalChunks) => ipcRenderer.invoke('generate-notes', chunkText, chunkIndex, totalChunks),
   generateSummary: (transcriptionText) => ipcRenderer.invoke('generate-summary', transcriptionText),
+  chatWithAI: (message) => ipcRenderer.invoke('chat-with-ai', message),
+  
+  // Window management
+  resizeWindow: (width, height) => ipcRenderer.invoke('resize-window', width, height),
+  
+  // Firebase Database operations
+  loadUserSessions: () => ipcRenderer.invoke('load-user-sessions'),
+  getSession: (sessionId) => ipcRenderer.invoke('get-session', sessionId),
+  updateSession: (sessionId, updates) => ipcRenderer.invoke('update-session', sessionId, updates),
+  saveFlashcards: (sessionId, flashcards) => ipcRenderer.invoke('save-flashcards', sessionId, flashcards),
+  saveSummary: (sessionId, summary, keyPoints, actionItems) => ipcRenderer.invoke('save-summary', sessionId, summary, keyPoints, actionItems),
+  saveNotes: (sessionId, notes) => ipcRenderer.invoke('save-notes', sessionId, notes),
+  deleteSession: (sessionId) => ipcRenderer.invoke('delete-session', sessionId),
+  seedSampleData: () => ipcRenderer.invoke('seed-sample-data'),
   askAIQuestion: (question, context) => ipcRenderer.invoke('ask-ai-question', question, context),
   
   // Event listeners
@@ -69,6 +89,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('amplitude-error', (event, errorData) => callback(errorData));
   },
   
+  onSessionsUpdated: (callback) => {
+    ipcRenderer.on('sessions-updated', () => callback());
+  },
+  
   // Remove listeners
   removeAuthStateListener: () => {
     ipcRenderer.removeAllListeners('auth-state-changed');
@@ -93,5 +117,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeAmplitudeListeners: () => {
     ipcRenderer.removeAllListeners('amplitude-update');
     ipcRenderer.removeAllListeners('amplitude-error');
+  },
+  
+  removeSessionsUpdatedListener: () => {
+    ipcRenderer.removeAllListeners('sessions-updated');
   }
 }); 

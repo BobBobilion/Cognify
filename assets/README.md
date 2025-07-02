@@ -11,7 +11,7 @@ This directory contains static assets for the Cognify application.
 ```
 assets/
 ├── icons/           # Application icons
-│   ├── icon.png     # Main app icon (PNG)
+│   ├── icon.svg     # Main app icon (SVG)
 │   ├── icon.ico     # Windows icon
 │   └── icon.icns    # macOS icon
 ├── images/          # UI images and graphics
@@ -26,7 +26,7 @@ assets/
 
 ### Icons
 - Place application icons in `icons/` subdirectory
-- Update `main.js` to reference `assets/icons/icon.png`
+- Update `main.js` to reference `assets/icons/icon.svg`
 - Use appropriate formats for each platform
 
 ### Images
@@ -39,6 +39,6 @@ assets/
 - Store sample audio files for testing transcription
 
 ## 📝 File Naming Conventions
-- Use lowercase with hyphens: `app-icon.png`
+- Use lowercase with hyphens: `app-icon.svg`
 - Include size in filename if multiple sizes: `icon-256x256.png`
 - Use descriptive names: `microphone-test-sample.wav` 

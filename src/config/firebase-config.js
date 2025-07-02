@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { initializeApp } = require('firebase/app');
-const { getAuth } = require('firebase/auth');
+const { getAuth, setPersistence, browserLocalPersistence } = require('firebase/auth');
+const { getFirestore } = require('firebase/firestore');
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -14,5 +15,20 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-module.exports = { auth, app }; 
+// Configure Auth Persistence - Keep user signed in across app restarts
+const initializeAuthPersistence = async () => {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    console.log('✅ Firebase Auth persistence configured');
+  } catch (error) {
+    console.warn('⚠️ Failed to set auth persistence:', error.message);
+    // Continue anyway - Firebase has default persistence
+  }
+};
+
+// Initialize persistence immediately
+initializeAuthPersistence();
+
+module.exports = { auth, app, db }; 

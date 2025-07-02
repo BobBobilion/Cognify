@@ -6,17 +6,31 @@
     <title>Cognify Overlay</title>
     <style>
         :root {
-            --bg-primary: rgba(15, 23, 42, 0.95);
-            --bg-secondary: rgba(30, 41, 59, 0.95);
-            --bg-tertiary: rgba(51, 65, 85, 0.95);
+            --bg-primary: rgba(255, 255, 255, 0.92);
+            --bg-secondary: rgba(248, 250, 252, 0.92);
+            --bg-tertiary: rgba(241, 245, 249, 0.92);
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
+            --border-color: rgba(226, 232, 240, 0.8);
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #2563eb;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: rgba(15, 23, 42, 0.92);
+            --bg-secondary: rgba(30, 41, 59, 0.92);
+            --bg-tertiary: rgba(51, 65, 85, 0.92);
             --text-primary: #f1f5f9;
             --text-secondary: #cbd5e1;
             --text-tertiary: #94a3b8;
             --border-color: rgba(51, 65, 85, 0.8);
             --accent-blue: #60a5fa;
             --accent-blue-hover: #3b82f6;
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
         }
@@ -33,6 +47,7 @@
             color: var(--text-primary);
             overflow: hidden;
             -webkit-app-region: drag;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .overlay-container {
@@ -40,11 +55,14 @@
             border: 1px solid var(--border-color);
             border-radius: 16px;
             box-shadow: var(--shadow-lg);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
             position: relative;
             transition: all 0.3s ease;
             min-width: 320px;
             max-width: 400px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .overlay-container.expanded {
@@ -53,16 +71,17 @@
         }
 
         .overlay-header {
-            padding: 1rem;
+            padding: 0.75rem 1rem;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
             justify-content: space-between;
             -webkit-app-region: drag;
+            flex-shrink: 0;
         }
 
         .overlay-title {
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: var(--text-primary);
             display: flex;
@@ -71,11 +90,16 @@
         }
 
         .recording-indicator {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             background: var(--accent-red);
             border-radius: 50%;
             animation: pulse 2s infinite;
+            display: none;
+        }
+
+        .recording-indicator.active {
+            display: block;
         }
 
         @keyframes pulse {
@@ -87,7 +111,7 @@
         .overlay-controls {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.25rem;
             -webkit-app-region: no-drag;
         }
 
@@ -95,15 +119,15 @@
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
-            padding: 6px;
-            border-radius: 6px;
+            padding: 4px;
+            border-radius: 4px;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 28px;
-            height: 28px;
+            width: 24px;
+            height: 24px;
             -webkit-app-region: no-drag;
         }
 
@@ -131,7 +155,8 @@
 
         .overlay-content {
             display: flex;
-            height: 300px;
+            flex: 1;
+            min-height: 0;
             -webkit-app-region: no-drag;
         }
 
@@ -155,18 +180,19 @@
 
         .transcription-area {
             flex: 1;
-            padding: 1rem;
+            padding: 0.75rem;
             overflow-y: auto;
             background: var(--bg-secondary);
+            min-height: 0;
         }
 
         .transcription-line {
-            margin-bottom: 0.75rem;
-            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            padding: 0.4rem;
             background: var(--bg-tertiary);
-            border-radius: 8px;
-            font-size: 0.875rem;
-            line-height: 1.4;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            line-height: 1.3;
             opacity: 0;
             animation: fadeIn 0.5s ease forwards;
         }
@@ -176,31 +202,99 @@
         }
 
         .transcription-timestamp {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             color: var(--text-tertiary);
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.2rem;
+        }
+
+        /* Microphone Monitor Section */
+        .microphone-monitor {
+            padding: 0.75rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            flex-shrink: 0;
+        }
+
+        .mic-level-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .mic-icon {
+            color: var(--accent-green);
+            flex-shrink: 0;
+        }
+
+        .mic-level-bar {
+            flex: 1;
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .mic-level-fill {
+            height: 100%;
+            background: linear-gradient(90deg, 
+                var(--accent-green) 0%, 
+                var(--accent-green) 60%, 
+                #f59e0b 80%, 
+                var(--accent-red) 100%);
+            border-radius: 3px;
+            transition: width 0.1s ease-out;
+            width: 0%;
+        }
+
+        .mic-level-text {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            min-width: 30px;
+            text-align: right;
+        }
+
+        .mic-status {
+            font-size: 0.65rem;
+            color: var(--text-tertiary);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .status-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        .status-dot.error {
+            background: var(--accent-red);
         }
 
         .action-buttons {
-            padding: 1rem;
+            padding: 0.5rem;
             border-top: 1px solid var(--border-color);
             display: flex;
-            gap: 0.75rem;
+            gap: 0.4rem;
             flex-wrap: wrap;
+            flex-shrink: 0;
         }
 
         .action-btn {
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             color: var(--text-primary);
-            padding: 8px 12px;
-            border-radius: 8px;
+            padding: 4px 8px;
+            border-radius: 6px;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
+            gap: 0.3rem;
+            font-size: 0.7rem;
             font-weight: 500;
             flex: 1;
             justify-content: center;
@@ -233,15 +327,22 @@
             opacity: 0.9;
         }
 
+        .action-btn.recording {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
         /* Chat Panel */
         .chat-header {
-            padding: 1rem;
+            padding: 0.75rem;
             border-bottom: 1px solid var(--border-color);
             background: var(--bg-secondary);
         }
 
         .chat-title {
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: var(--text-primary);
             margin: 0;
@@ -249,53 +350,62 @@
 
         .chat-messages {
             flex: 1;
-            padding: 1rem;
+            padding: 0.75rem;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 0.75rem;
+            min-height: 0;
         }
 
         .message {
-            max-width: 80%;
-            padding: 0.75rem;
-            border-radius: 12px;
-            font-size: 0.875rem;
-            line-height: 1.4;
+            max-width: 85%;
+            padding: 0.5rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            line-height: 1.3;
         }
 
         .message.user {
             background: var(--accent-blue);
             color: white;
             align-self: flex-end;
-            border-bottom-right-radius: 4px;
+            border-bottom-right-radius: 3px;
         }
 
         .message.ai {
             background: var(--bg-tertiary);
             color: var(--text-primary);
             align-self: flex-start;
-            border-bottom-left-radius: 4px;
+            border-bottom-left-radius: 3px;
+        }
+
+        .message.thinking {
+            background: var(--bg-tertiary);
+            color: var(--text-tertiary);
+            align-self: flex-start;
+            font-style: italic;
+            animation: pulse 1.5s infinite;
         }
 
         .chat-input-area {
-            padding: 1rem;
+            padding: 0.75rem;
             border-top: 1px solid var(--border-color);
             display: flex;
-            gap: 0.5rem;
+            gap: 0.4rem;
         }
 
         .chat-input {
             flex: 1;
             background: var(--bg-tertiary);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 8px 12px;
+            border-radius: 6px;
+            padding: 6px 8px;
             color: var(--text-primary);
-            font-size: 0.875rem;
+            font-size: 0.75rem;
             resize: none;
-            height: 36px;
-            min-height: 36px;
+            height: 30px;
+            min-height: 30px;
         }
 
         .chat-input::placeholder {
@@ -305,15 +415,15 @@
         .chat-input:focus {
             outline: none;
             border-color: var(--accent-blue);
-            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
         }
 
         .send-btn {
             background: var(--accent-blue);
             border: 1px solid var(--accent-blue);
             color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
+            padding: 6px 8px;
+            border-radius: 6px;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
@@ -334,43 +444,36 @@
         .empty-transcription {
             text-align: center;
             color: var(--text-tertiary);
-            font-size: 0.875rem;
-            padding: 2rem 1rem;
+            font-size: 0.75rem;
+            padding: 1.5rem 0.75rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
         }
 
         .empty-icon {
-            width: 48px;
-            height: 48px;
+            width: 36px;
+            height: 36px;
             fill: var(--text-tertiary);
         }
 
         .status-indicator {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
+            gap: 0.4rem;
+            padding: 0.4rem 0.75rem;
             background: var(--bg-tertiary);
-            border-radius: 8px;
-            font-size: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.65rem;
             color: var(--text-secondary);
-            margin-bottom: 1rem;
-        }
-
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--accent-green);
+            margin-bottom: 0.75rem;
         }
 
         /* Scrollbar Styling */
         .transcription-area::-webkit-scrollbar,
         .chat-messages::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
         }
 
         .transcription-area::-webkit-scrollbar-track,
@@ -381,7 +484,7 @@
         .transcription-area::-webkit-scrollbar-thumb,
         .chat-messages::-webkit-scrollbar-thumb {
             background: var(--text-tertiary);
-            border-radius: 3px;
+            border-radius: 2px;
         }
 
         .transcription-area::-webkit-scrollbar-thumb:hover,
@@ -400,22 +503,23 @@
         <div class="overlay-header">
             <div class="overlay-title">
                 <div class="recording-indicator" id="recording-indicator"></div>
-                <span id="session-title">Recording Session</span>
+                <span id="session-title">Ready to Record</span>
             </div>
             <div class="overlay-controls">
                 <button class="control-btn" onclick="toggleExpand()" id="expand-btn" title="Expand">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
                     </svg>
                 </button>
                 <button class="control-btn" onclick="takeScreenshot()" title="Screenshot">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM5 17l3.5-4.5 2.5 3.01L14.5 11l4.5 6H5z"/>
                     </svg>
                 </button>
                 <button class="control-btn" onclick="closeOverlay()" title="Close">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
@@ -426,35 +530,53 @@
                 <div class="transcription-area" id="transcription-area">
                     <div class="status-indicator">
                         <div class="status-dot"></div>
-                        <span>Live transcription active</span>
+                        <span>Ready for transcription</span>
                     </div>
                     
                     <div class="empty-transcription" id="empty-transcription">
                         <svg class="empty-icon" viewBox="0 0 24 24">
-                            <path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0 2c-4.411 0-8 3.589-8 8s3.589 8 8 8 8-3.589 8-8-3.589-8-8-8zm0 3c1.657 0 3 1.343 3 3 0 .756-.298 1.441-.781 1.948l-.219.252v.8c0 .552-.448 1-1 1s-1-.448-1-1v-.8c0-.265.105-.52.293-.707.378-.378.707-.878.707-1.493 0-.552-.448-1-1-1s-1 .448-1 1c0 .552-.448 1-1 1s-1-.448-1-1c0-1.657 1.343-3 3-3zm0 8c.552 0 1 .448 1 1s-.448 1-1 1-1-.448-1-1 .448-1 1-1z"/>
+                            <path d="M12 8.5l-3 3h2v4h2v-4h2l-3-3zm0-7.5c-5.523 0-10 4.477-10 10s4.477 10 10 10 10-4.477 10-10-4.477-10-10-10zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/>
                         </svg>
-                        <div>Waiting for audio...</div>
+                        <div>Click "Record" to begin</div>
+                    </div>
+                </div>
+
+                <!-- Microphone Monitor Section -->
+                <div class="microphone-monitor">
+                    <div class="mic-level-container">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="mic-icon">
+                            <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V5a3 3 0 0 1 3-3z"/>
+                            <path d="M19 10v1a7 7 0 0 1-7 7 7 7 0 0 1-7-7v-1M12 18v4M8 22h8"/>
+                        </svg>
+                        <div class="mic-level-bar">
+                            <div class="mic-level-fill" id="mic-level-fill"></div>
+                        </div>
+                        <div class="mic-level-text" id="mic-level-text">0%</div>
+                    </div>
+                    <div class="mic-status">
+                        <div class="status-dot" id="mic-status-dot"></div>
+                        <span id="mic-status-text">Microphone ready</span>
                     </div>
                 </div>
 
                 <div class="action-buttons">
                     <button class="action-btn success" onclick="toggleRecording()" id="record-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <circle cx="12" cy="12" r="10"/>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
                         </svg>
-                        <span id="record-text">Start</span>
+                        <span id="record-text">Record</span>
                     </button>
                     <button class="action-btn" onclick="takeScreenshot()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM5 17l3.5-4.5 2.5 3.01L14.5 11l4.5 6H5z"/>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 4H16.83l-1.7-1.7c-.39-.39-.9-.6-1.41-.6H10.28c-.51 0-1.02.21-1.41.6L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
                         </svg>
-                        Screenshot
+                        Shot
                     </button>
                     <button class="action-btn danger" onclick="endSession()" id="end-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M6 6h12v12H6z"/>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16 6l-4 4-4-4-2 2 4 4-4 4 2 2 4-4 4 4 2-2-4-4 4-4z"/>
                         </svg>
-                        Done
+                        End
                     </button>
                 </div>
             </div>
@@ -465,14 +587,14 @@
                 </div>
                 <div class="chat-messages" id="chat-messages">
                     <div class="message ai">
-                        <div>Hi! I'm your AI assistant. I can help answer questions about your current session. What would you like to know?</div>
+                        <div>Hi! I'm your AI assistant powered by GPT-4. I can help answer questions about your session in real-time!</div>
                     </div>
                 </div>
                 <div class="chat-input-area">
-                    <textarea class="chat-input" id="chat-input" placeholder="Ask about the current session..." rows="1"></textarea>
+                    <textarea class="chat-input" id="chat-input" placeholder="Ask me anything..." rows="1"></textarea>
                     <button class="send-btn" onclick="sendMessage()" id="send-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
                         </svg>
                     </button>
                 </div>
@@ -487,6 +609,10 @@
         let transcriptionData = [];
         let sessionStartTime = null;
         let recordingTimer = null;
+        let micAmplitude = 0;
+        let micPeak = 0;
+        let isAmplitudeMonitoring = false;
+        let animationFrame = null;
 
         // Initialize overlay
         function initializeOverlay() {
@@ -496,46 +622,238 @@
                 window.moveTo(x, y);
             }
 
+            // Initialize theme
+            initializeTheme();
+
             // Auto-resize chat input
             const chatInput = document.getElementById('chat-input');
-            chatInput.addEventListener('input', function() {
-                this.style.height = 'auto';
-                this.style.height = Math.min(this.scrollHeight, 100) + 'px';
-            });
+            if (chatInput) {
+                chatInput.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+                });
 
-            // Enable Enter to send chat messages
-            chatInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                }
-            });
+                // Enable Enter to send chat messages
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+            }
 
-            // Start session automatically
-            startSession();
+            // Initialize microphone monitoring
+            initializeMicrophoneMonitoring();
         }
 
-        function startSession() {
-            sessionStartTime = new Date();
-            updateSessionTitle();
-            startRecordingTimer();
+        // Theme management - matching main app
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.body.setAttribute('data-theme', 'dark');
+            }
+
+            // Listen for theme changes from main app
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (!localStorage.getItem('theme')) {
+                    if (e.matches) {
+                        document.body.setAttribute('data-theme', 'dark');
+                    } else {
+                        document.body.removeAttribute('data-theme');
+                    }
+                }
+            });
+        }
+
+        // Initialize microphone monitoring using the same logic as amplitude monitor
+        async function initializeMicrophoneMonitoring() {
+            try {
+                console.log('Starting microphone monitoring in overlay...');
+                
+                // Set up IPC event listeners
+                if (window.electronAPI) {
+                    window.electronAPI.onAmplitudeUpdate(handleAmplitudeUpdate);
+                    window.electronAPI.onAmplitudeError(handleAmplitudeError);
+                }
+                
+                // Start monitoring via main process
+                if (window.electronAPI && window.electronAPI.startAmplitudeMonitoring) {
+                    const result = await window.electronAPI.startAmplitudeMonitoring();
+                    
+                    if (result.success) {
+                        isAmplitudeMonitoring = true;
+                        startMicrophoneVisualization();
+                        updateMicStatus('Microphone active', 'success');
+                        console.log('Microphone monitoring started successfully');
+                    } else {
+                        throw new Error(result.error || 'Failed to start monitoring');
+                    }
+                } else {
+                    throw new Error('Amplitude monitoring API not available');
+                }
+                
+            } catch (error) {
+                console.error('Failed to initialize microphone monitoring:', error);
+                updateMicStatus('Microphone unavailable', 'error');
+            }
+        }
+
+        // Handle amplitude updates from main process
+        function handleAmplitudeUpdate(data) {
+            const { source, rms, peak, timestamp } = data;
+            
+            if (source === 'microphone') {
+                micAmplitude = rms;
+                micPeak = Math.max(micPeak, peak);
+            }
+        }
+
+        // Handle amplitude errors from main process
+        function handleAmplitudeError(data) {
+            const { source, error, solutions } = data;
+            console.error(`${source} amplitude error:`, error);
+            
+            if (source === 'microphone') {
+                updateMicStatus(`Microphone error: ${error}`, 'error');
+            }
+        }
+
+        function startMicrophoneVisualization() {
+            function animate() {
+                if (!isAmplitudeMonitoring) return;
+                
+                // Update microphone display
+                updateMicrophoneDisplay(micAmplitude);
+                
+                // Reset peaks periodically
+                if (Math.random() < 0.01) {
+                    micPeak = Math.max(0, micPeak - 1);
+                }
+                
+                animationFrame = requestAnimationFrame(animate);
+            }
+            
+            animate();
+        }
+
+        function updateMicrophoneDisplay(amplitude) {
+            const fill = document.getElementById('mic-level-fill');
+            const text = document.getElementById('mic-level-text');
+            
+            if (fill && text) {
+                fill.style.width = amplitude + '%';
+                text.textContent = Math.round(amplitude) + '%';
+            }
+        }
+
+        function updateMicStatus(message, type = 'default') {
+            const statusText = document.getElementById('mic-status-text');
+            const statusDot = document.getElementById('mic-status-dot');
+            
+            if (statusText) {
+                statusText.textContent = message;
+            }
+            
+            if (statusDot) {
+                statusDot.classList.remove('error');
+                if (type === 'error') {
+                    statusDot.classList.add('error');
+                }
+            }
+        }
+
+        // Recording functions - FIXED TIMER
+        function toggleRecording() {
+            const recordBtn = document.getElementById('record-btn');
+            const recordText = document.getElementById('record-text');
+            const recordingIndicator = document.getElementById('recording-indicator');
+            const statusIndicator = document.querySelector('.status-indicator span');
+            
+            isRecording = !isRecording;
+            
+            if (isRecording) {
+                // Start recording
+                recordBtn.classList.remove('success');
+                recordBtn.classList.add('recording');
+                recordText.textContent = 'Stop';
+                recordingIndicator.classList.add('active');
+                
+                // Update record button icon to stop
+                recordBtn.querySelector('svg').innerHTML = '<path d="M6 6h12v12H6z"/>';
+                
+                if (statusIndicator) {
+                    statusIndicator.textContent = 'Recording active';
+                }
+                
+                // Start session timer ONLY when recording starts
+                sessionStartTime = new Date();
+                startRecordingTimer();
+                
+                // Clear empty state
+                const emptyTranscription = document.getElementById('empty-transcription');
+                if (emptyTranscription) {
+                    emptyTranscription.style.display = 'none';
+                }
+                
+                startRecording();
+            } else {
+                // Stop recording
+                recordBtn.classList.remove('recording');
+                recordBtn.classList.add('success');
+                recordText.textContent = 'Record';
+                recordingIndicator.classList.remove('active');
+                
+                // Update record button icon to play
+                recordBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
+                
+                if (statusIndicator) {
+                    statusIndicator.textContent = 'Recording stopped';
+                }
+                
+                // Stop session timer
+                if (recordingTimer) {
+                    clearInterval(recordingTimer);
+                    recordingTimer = null;
+                }
+                
+                stopRecording();
+            }
+        }
+
+        function startRecording() {
+            console.log('Starting audio recording...');
+            // TODO: Start actual audio recording
+            simulateTranscription();
+        }
+
+        function stopRecording() {
+            console.log('Stopping audio recording...');
+            // TODO: Stop actual audio recording
+        }
+
+        // Timer functions - FIXED to only run when recording
+        function startRecordingTimer() {
+            if (recordingTimer) {
+                clearInterval(recordingTimer);
+            }
+            recordingTimer = setInterval(updateSessionTitle, 1000);
         }
 
         function updateSessionTitle() {
             const title = document.getElementById('session-title');
-            if (sessionStartTime) {
+            if (title && sessionStartTime && isRecording) {
                 const elapsed = Math.floor((new Date() - sessionStartTime) / 1000);
                 const minutes = Math.floor(elapsed / 60);
                 const seconds = elapsed % 60;
                 title.textContent = `Recording ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            } else if (title && !isRecording) {
+                title.textContent = 'Ready to Record';
             }
         }
 
-        function startRecordingTimer() {
-            recordingTimer = setInterval(updateSessionTitle, 1000);
-        }
-
-        function toggleExpand() {
+        async function toggleExpand() {
             const container = document.getElementById('overlay-container');
             const sidePanel = document.getElementById('side-panel');
             const expandBtn = document.getElementById('expand-btn');
@@ -546,59 +864,31 @@
                 container.classList.add('expanded');
                 sidePanel.classList.add('open');
                 expandBtn.innerHTML = `
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
                     </svg>
                 `;
                 expandBtn.title = 'Collapse';
+                
+                // Resize window to expanded size
+                if (window.electronAPI && window.electronAPI.resizeWindow) {
+                    await window.electronAPI.resizeWindow(800, 350);
+                }
             } else {
                 container.classList.remove('expanded');
                 sidePanel.classList.remove('open');
                 expandBtn.innerHTML = `
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
                     </svg>
                 `;
                 expandBtn.title = 'Expand';
+                
+                // Resize window to collapsed size
+                if (window.electronAPI && window.electronAPI.resizeWindow) {
+                    await window.electronAPI.resizeWindow(400, 350);
+                }
             }
-        }
-
-        function toggleRecording() {
-            const recordBtn = document.getElementById('record-btn');
-            const recordText = document.getElementById('record-text');
-            const recordingIndicator = document.getElementById('recording-indicator');
-            
-            isRecording = !isRecording;
-            
-            if (isRecording) {
-                recordBtn.classList.remove('success');
-                recordBtn.classList.add('danger');
-                recordText.textContent = 'Stop';
-                recordingIndicator.style.display = 'block';
-                startRecording();
-            } else {
-                recordBtn.classList.remove('danger');
-                recordBtn.classList.add('success');
-                recordText.textContent = 'Start';
-                recordingIndicator.style.display = 'none';
-                stopRecording();
-            }
-        }
-
-        function startRecording() {
-            // Clear empty state
-            document.getElementById('empty-transcription').style.display = 'none';
-            
-            // TODO: Start actual audio recording
-            console.log('Starting audio recording...');
-            
-            // Simulate live transcription for demo
-            simulateTranscription();
-        }
-
-        function stopRecording() {
-            // TODO: Stop actual audio recording
-            console.log('Stopping audio recording...');
         }
 
         function simulateTranscription() {
@@ -640,53 +930,98 @@
         }
 
         function takeScreenshot() {
-            // TODO: Implement screenshot capture
             console.log('Taking screenshot...');
             
             // Visual feedback
             const btn = event.target.closest('.action-btn') || event.target.closest('.control-btn');
-            const originalBg = btn.style.background;
-            btn.style.background = var(--accent-green);
-            setTimeout(() => {
-                btn.style.background = originalBg;
-            }, 200);
+            if (btn) {
+                const originalBg = btn.style.background;
+                btn.style.background = 'var(--accent-green)';
+                setTimeout(() => {
+                    btn.style.background = originalBg;
+                }, 200);
+            }
             
-            // Mock notification
             showNotification('Screenshot captured!');
         }
 
-        function sendMessage() {
+        // Live chat with OpenAI GPT-4 mini
+        async function sendMessage() {
             const input = document.getElementById('chat-input');
+            const sendBtn = document.getElementById('send-btn');
+            if (!input) return;
+            
             const message = input.value.trim();
             
             if (!message) return;
+            
+            // Disable input and button
+            input.disabled = true;
+            sendBtn.disabled = true;
             
             // Add user message
             addChatMessage(message, 'user');
             input.value = '';
             input.style.height = 'auto';
             
-            // Simulate AI response
-            setTimeout(() => {
-                const responses = [
-                    "Based on the current transcription, I can see you're discussing machine learning concepts. Would you like me to explain any specific algorithms?",
-                    "I noticed mentions of supervised learning. This involves training models with labeled data to make predictions.",
-                    "The session seems to cover fundamental ML concepts. Are there any particular aspects you'd like me to clarify?",
-                    "From what I've transcribed, you're covering key machine learning topics. I can help explain any of these concepts in more detail."
-                ];
-                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                addChatMessage(randomResponse, 'ai');
-            }, 1000);
+            // Add thinking indicator
+            const thinkingMessage = addChatMessage('Thinking...', 'thinking');
+            
+            try {
+                // Prepare context with current transcription
+                const context = transcriptionData.length > 0 
+                    ? `Current session transcript:\n${transcriptionData.map(t => `[${t.timestamp}] ${t.text}`).join('\n')}\n\nUser question: ${message}`
+                    : `User question about their learning session: ${message}`;
+
+                // Call OpenAI API through main process
+                if (window.electronAPI && window.electronAPI.chatWithAI) {
+                    const response = await window.electronAPI.chatWithAI(context);
+                    
+                    // Remove thinking message
+                    thinkingMessage.remove();
+                    
+                    if (response.success) {
+                        addChatMessage(response.message, 'ai');
+                    } else {
+                        addChatMessage('Sorry, I encountered an error. Please try again.', 'ai');
+                        console.error('AI chat error:', response.error);
+                    }
+                } else {
+                    // Fallback to simulated response if API not available
+                    thinkingMessage.remove();
+                    const responses = [
+                        "Based on your current session, I can help clarify any concepts you're learning about.",
+                        "That's a great question! From what I can see in your transcript, you might want to focus on understanding the key principles first.",
+                        "I notice you're covering some complex topics. Would you like me to break down any specific concept?",
+                        "Your session seems very productive! Feel free to ask me about any details you'd like to explore further."
+                    ];
+                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                    addChatMessage(randomResponse, 'ai');
+                }
+            } catch (error) {
+                console.error('Error sending message to AI:', error);
+                thinkingMessage.remove();
+                addChatMessage('Sorry, I encountered an error. Please try again.', 'ai');
+            } finally {
+                // Re-enable input and button
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
+            }
         }
 
         function addChatMessage(text, sender) {
             const messagesContainer = document.getElementById('chat-messages');
+            if (!messagesContainer) return;
+            
             const message = document.createElement('div');
             message.className = `message ${sender}`;
             message.textContent = text;
             
             messagesContainer.appendChild(message);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            return message; // Return for potential removal (thinking messages)
         }
 
         function endSession() {
@@ -696,18 +1031,15 @@
                     toggleRecording();
                 }
                 
-                // Clear timer
-                if (recordingTimer) {
-                    clearInterval(recordingTimer);
-                }
+                // Stop microphone monitoring
+                stopMicrophoneMonitoring();
                 
-                // TODO: Save session data and open main app
                 console.log('Ending session and opening main app...');
                 
                 if (window.electronAPI) {
                     window.electronAPI.endSession({
                         startTime: sessionStartTime,
-                        duration: Math.floor((new Date() - sessionStartTime) / 1000),
+                        duration: sessionStartTime ? Math.floor((new Date() - sessionStartTime) / 1000) : 0,
                         transcription: transcriptionData
                     });
                 }
@@ -717,6 +1049,14 @@
         }
 
         function closeOverlay() {
+            // Stop recording if active
+            if (isRecording) {
+                toggleRecording();
+            }
+            
+            // Stop microphone monitoring
+            stopMicrophoneMonitoring();
+            
             // Save position
             const position = { x: window.screenX, y: window.screenY };
             localStorage.setItem('overlay-position', JSON.stringify(position));
@@ -725,6 +1065,29 @@
                 window.electronAPI.closeOverlay();
             } else {
                 window.close();
+            }
+        }
+
+        async function stopMicrophoneMonitoring() {
+            try {
+                isAmplitudeMonitoring = false;
+                
+                if (animationFrame) {
+                    cancelAnimationFrame(animationFrame);
+                }
+                
+                if (window.electronAPI && window.electronAPI.stopAmplitudeMonitoring) {
+                    const result = await window.electronAPI.stopAmplitudeMonitoring();
+                    console.log('Amplitude monitoring stopped:', result);
+                }
+                
+                // Remove event listeners
+                if (window.electronAPI && window.electronAPI.removeAmplitudeListeners) {
+                    window.electronAPI.removeAmplitudeListeners();
+                }
+                
+            } catch (error) {
+                console.error('Failed to stop microphone monitoring:', error);
             }
         }
 
@@ -737,9 +1100,9 @@
                 right: 10px;
                 background: var(--accent-green);
                 color: white;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-size: 0.875rem;
+                padding: 6px 10px;
+                border-radius: 4px;
+                font-size: 0.75rem;
                 z-index: 1000;
                 animation: slideIn 0.3s ease;
             `;
@@ -774,8 +1137,10 @@
         // Initialize when page loads
         window.addEventListener('DOMContentLoaded', initializeOverlay);
 
-        // Save position on move
+        // Cleanup on close
         window.addEventListener('beforeunload', () => {
+            stopMicrophoneMonitoring();
+            
             const position = { x: window.screenX, y: window.screenY };
             localStorage.setItem('overlay-position', JSON.stringify(position));
         });
