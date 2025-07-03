@@ -978,13 +978,13 @@ ipcMain.handle('end-session', async (event, sessionData) => {
     createSessionDetailWindow(savedSessionId, sessionData.chatHistory);
   } else {
     // Fallback: show main window if session save failed
-    if (mainWindow) {
-      mainWindow.show();
-      mainWindow.focus();
+  if (mainWindow) {
+    mainWindow.show();
+    mainWindow.focus();
     }
   }
   
-  // Refresh sessions list with the new session ID
+    // Refresh sessions list with the new session ID
   if (mainWindow) {
     mainWindow.webContents.send('session-ended', { 
       ...sessionData, 

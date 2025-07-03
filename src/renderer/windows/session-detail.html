@@ -1,4 +1,25 @@
 <!DOCTYPE html>
+<!--
+N8N FLASHCARD GENERATION SETUP:
+1. Replace the webhook URL in N8N_CONFIG with your actual n8n webhook endpoint
+2. Your n8n workflow should expect a POST request with:
+   - sessionId: string
+   - sessionTitle: string  
+   - transcript: string
+   - timestamp: ISO string
+3. Your n8n workflow should return JSON with:
+   - flashcards: array of objects with 'question' and 'answer' properties
+   
+Example response:
+{
+  "flashcards": [
+    {
+      "question": "What is machine learning?",
+      "answer": "Machine learning is a subset of AI..."
+    }
+  ]
+}
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -54,6 +75,49 @@
             color: var(--text-primary);
             transition: background-color 0.3s ease, color 0.3s ease;
             min-height: 100vh;
+        }
+
+        /* Modern Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.4);
+            border-radius: 3px;
+            transition: background 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.6);
+        }
+
+        ::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+
+        [data-theme="dark"] ::-webkit-scrollbar-thumb {
+            background: rgba(203, 213, 225, 0.3);
+        }
+
+        [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+            background: rgba(203, 213, 225, 0.5);
+        }
+
+        /* Firefox scrollbar styling */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+        }
+
+        [data-theme="dark"] * {
+            scrollbar-color: rgba(203, 213, 225, 0.3) transparent;
         }
 
         .header {
@@ -159,6 +223,21 @@
         .btn-success {
             background: var(--success-color);
             border-color: var(--success-color);
+        }
+
+        .btn-purple {
+            background: var(--accent-purple);
+            border-color: var(--accent-purple);
+        }
+
+        .btn-purple:hover {
+            background: #7c3aed;
+            border-color: #7c3aed;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.75rem;
         }
 
         .container {
@@ -475,6 +554,7 @@
             padding: 1.5rem;
             cursor: pointer;
             transition: all 0.3s ease;
+            position: relative;
         }
 
         .flashcard:hover {
@@ -483,15 +563,105 @@
             border-color: var(--accent-blue);
         }
 
+        .flashcard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .flashcard-delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-tertiary);
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .flashcard-delete-btn:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .flashcard-edit-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-tertiary);
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 4px;
+        }
+
+        .flashcard-edit-btn:hover {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .flashcard-actions {
+            display: flex;
+            gap: 2px;
+        }
+
         .flashcard-question {
             font-weight: 600;
             color: var(--text-primary);
             margin-bottom: 1rem;
+            flex: 1;
         }
 
         .flashcard-answer {
             color: var(--text-secondary);
             font-size: 0.875rem;
+        }
+
+        .flashcard-add {
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 140px;
+            color: var(--text-tertiary);
+        }
+
+        .flashcard-add:hover {
+            border-color: var(--accent-blue);
+            background: var(--accent-blue-light);
+            color: var(--accent-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .flashcard-add-icon {
+            margin-bottom: 0.5rem;
+            opacity: 0.7;
+        }
+
+        .flashcard-add:hover .flashcard-add-icon {
+            opacity: 1;
+        }
+
+        .flashcard-add-text {
+            font-weight: 500;
+            font-size: 0.9rem;
         }
 
         .screenshots-grid {
@@ -951,7 +1121,80 @@
             left: 0;
         }
 
+        /* Flashcards Controls Header */
+        .flashcards-controls-header {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 2rem;
+        }
 
+        .flashcards-header-info {
+            flex: 1;
+        }
+
+        .flashcards-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .flashcards-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .flashcards-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .export-buttons-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .flashcards-status {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .flashcards-count {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .flashcards-source {
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+            background: var(--bg-secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
 
         @media (max-width: 768px) {
             .header {
@@ -1009,6 +1252,164 @@
                 min-height: 60px;
                 max-height: 120px;
             }
+
+            /* Responsive flashcards controls */
+            .flashcards-controls-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .flashcards-actions {
+                justify-content: flex-start;
+                gap: 0.5rem;
+            }
+
+            .export-buttons-group {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .export-buttons-group .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .flashcards-status {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .status-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
+            }
+        }
+
+        /* Add Flashcard Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input, .form-textarea {
+            width: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+            border-color: var(--text-tertiary);
+            color: var(--text-primary);
         }
     </style>
 </head>
@@ -1171,9 +1572,40 @@
 
         <!-- Flashcards Tab -->
         <div id="flashcards-content" class="tab-content">
-            <div class="export-section">
-                <h3 class="export-title">Export Flashcards</h3>
-                <div class="export-buttons">
+            <!-- Flashcards Controls Header - Always at Top -->
+            <div class="flashcards-controls-header">
+                <div class="flashcards-header-info">
+                    <h3 class="flashcards-title">AI-Generated Flashcards</h3>
+                    <p class="flashcards-description">Generate flashcards from your session content using AI via n8n workflow.</p>
+                </div>
+                
+                <div class="flashcards-actions">
+                    <!-- Generate Button (shown when no flashcards) -->
+                    <button class="btn btn-success" onclick="generateFlashcards()" id="generate-flashcards-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        Generate Flashcards
+                    </button>
+                    
+                    <!-- Add Flashcard Button -->
+                    <button class="btn btn-success" onclick="showAddFlashcardModal()" id="add-flashcard-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                        </svg>
+                        Add Flashcard
+                    </button>
+                    
+                    <!-- Regenerate Button (shown when flashcards exist) -->
+                    <button class="btn btn-purple" onclick="generateFlashcards()" id="regenerate-flashcards-btn" style="display: none;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                        </svg>
+                        Regenerate Flashcards
+                    </button>
+                    
+                    <!-- Export Buttons (shown when flashcards exist) -->
+                    <div class="export-buttons-group" id="export-buttons-group" style="display: none;">
                     <button class="btn" onclick="exportAnki()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
@@ -1186,25 +1618,30 @@
                         </svg>
                         Export to Quizlet
                     </button>
+                    </div>
                 </div>
             </div>
 
+            <!-- Flashcards Count and Status -->
+            <div class="flashcards-status" id="flashcards-status" style="display: none;">
+                <div class="status-info">
+                    <span class="flashcards-count" id="flashcards-count">0 flashcards generated</span>
+                    <span class="flashcards-source">Generated via n8n workflow</span>
+                </div>
+            </div>
+
+            <!-- Flashcards Grid -->
             <div id="flashcards-grid" class="flashcard-grid">
                 <!-- Flashcards will be loaded here -->
             </div>
 
-            <div id="generate-flashcards" class="generate-section">
+            <!-- Empty State (shown when no flashcards) -->
+            <div id="flashcards-empty" class="generate-section">
                 <svg class="generate-icon" viewBox="0 0 24 24">
                     <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
                 </svg>
-                <h3 class="generate-title">Generate Flashcards</h3>
-                <p class="generate-description">Click the button below to generate flashcards from your session content using AI.</p>
-                <button class="btn btn-success btn-large" onclick="generateFlashcards()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                    Generate Flashcards
-                </button>
+                <h3 class="generate-title">No Flashcards Yet</h3>
+                <p class="generate-description">Click "Generate Flashcards" above to create flashcards from your session transcript.</p>
             </div>
         </div>
 
@@ -1216,7 +1653,62 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="addFlashcardModal" onclick="closeAddFlashcardModal()">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">Add Flashcard</h3>
+                <button class="modal-close" onclick="closeAddFlashcardModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+            </div>
+            <form onsubmit="handleAddFlashcardSubmit(event)">
+                <div class="form-group">
+                    <label for="question" class="form-label">Question</label>
+                    <input type="text" id="question" class="form-input" placeholder="Enter question" required>
+                </div>
+                <div class="form-group">
+                    <label for="answer" class="form-label">Answer</label>
+                    <textarea id="answer" class="form-textarea" placeholder="Enter answer" required></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddFlashcardModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Add Flashcard</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        // N8N Webhook Configuration
+        // Replace with your actual n8n webhook URL
+        const N8N_CONFIG = {
+            webhookUrl: localStorage.getItem('n8n-webhook-url') || 'https://your-n8n-instance.com/webhook/generate-flashcards',
+            timeout: 300000, // 5 minutes timeout
+            retries: 1
+        };
+
+        // Helper function to set webhook URL (can be called from browser console)
+        function setN8nWebhookUrl(url) {
+            if (!url || !url.startsWith('http')) {
+                console.error('Please provide a valid webhook URL starting with http:// or https://');
+                return false;
+            }
+            localStorage.setItem('n8n-webhook-url', url);
+            N8N_CONFIG.webhookUrl = url;
+            console.log('✅ n8n webhook URL updated to:', url);
+            console.log('ℹ️ You can now generate flashcards using your n8n workflow!');
+            return true;
+        }
+
+        // Display current configuration on page load
+        console.log('🔧 n8n Flashcard Generation Configuration:');
+        console.log('   Webhook URL:', N8N_CONFIG.webhookUrl);
+        console.log('   Timeout:', N8N_CONFIG.timeout + 'ms');
+        console.log('');
+        console.log('💡 To set your webhook URL, run: setN8nWebhookUrl("https://your-n8n-instance.com/webhook/generate-flashcards")');
+
         // Legacy hardcoded session data (kept for reference/fallback)
         // Now loading from Firebase instead
         const allSessionData = {
@@ -1474,6 +1966,9 @@
         
         // Chat history for the current session
         let chatHistory = [];
+        
+        // Track current editing state
+        let currentEditingIndex = null;
 
         function getSessionIdFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -1578,16 +2073,38 @@
 
         function checkFlashcards() {
             const grid = document.getElementById('flashcards-grid');
-            const generateSection = document.getElementById('generate-flashcards');
+            const emptyState = document.getElementById('flashcards-empty');
+            const status = document.getElementById('flashcards-status');
+            const generateBtn = document.getElementById('generate-flashcards-btn');
+            const regenerateBtn = document.getElementById('regenerate-flashcards-btn');
+            const exportGroup = document.getElementById('export-buttons-group');
+            const flashcardsCount = document.getElementById('flashcards-count');
+            
+            // Always show grid (since we always have the Add card)
+                grid.style.display = 'grid';
+            emptyState.style.display = 'none';
             
             if (sessionData.flashcards && sessionData.flashcards.length > 0) {
-                grid.style.display = 'grid';
-                generateSection.style.display = 'none';
-                loadFlashcards();
+                // Show flashcards and controls
+                status.style.display = 'block';
+                generateBtn.style.display = 'none';
+                regenerateBtn.style.display = 'inline-flex';
+                exportGroup.style.display = 'flex';
+                
+                // Update count
+                if (flashcardsCount) {
+                    flashcardsCount.textContent = `${sessionData.flashcards.length} flashcard${sessionData.flashcards.length !== 1 ? 's' : ''} generated`;
+                }
             } else {
-                grid.style.display = 'none';
-                generateSection.style.display = 'block';
+                // No flashcards yet - show generate button, hide export options
+                status.style.display = 'none';
+                generateBtn.style.display = 'inline-flex';
+                regenerateBtn.style.display = 'none';
+                exportGroup.style.display = 'none';
             }
+            
+            // Always load flashcards (including the Add card)
+            loadFlashcards();
         }
 
         function checkExistingSummary() {
@@ -1703,12 +2220,42 @@
 
         function loadFlashcards() {
             const grid = document.getElementById('flashcards-grid');
-            grid.innerHTML = sessionData.flashcards.map((card, index) => `
+            
+            // Regular flashcards
+            const flashcardHTML = sessionData.flashcards.map((card, index) => `
                 <div class="flashcard" onclick="flipCard(${index})">
+                    <div class="flashcard-header">
                     <div class="flashcard-question">${card.question}</div>
+                        <div class="flashcard-actions">
+                            <button class="flashcard-edit-btn" onclick="editFlashcard(${index}, event)" title="Edit flashcard">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
+                                </svg>
+                            </button>
+                            <button class="flashcard-delete-btn" onclick="deleteFlashcard(${index}, event)" title="Delete flashcard">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                     <div class="flashcard-answer">${card.answer}</div>
                 </div>
             `).join('');
+            
+            // Add card at the end
+            const addCardHTML = `
+                <div class="flashcard-add" onclick="showAddFlashcardModal()" title="Add new flashcard">
+                    <div class="flashcard-add-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                        </svg>
+                    </div>
+                    <div class="flashcard-add-text">Add Flashcard</div>
+                </div>
+            `;
+            
+            grid.innerHTML = flashcardHTML + addCardHTML;
         }
 
         function showTab(tabName) {
@@ -2682,15 +3229,43 @@
                     throw new Error('No transcription data available to generate flashcards');
                 }
                 
-                // Call the AI service
-                if (window.electronAPI && window.electronAPI.generateFlashcards) {
-                    const result = await window.electronAPI.generateFlashcards(transcriptionText);
-                    
-                    if (result.success && result.flashcards) {
+                console.log('📡 Calling n8n webhook to generate flashcards...');
+                
+                // Prepare payload for n8n webhook
+                const payload = {
+                    sessionId: sessionData.id,
+                    sessionTitle: sessionData.title,
+                    transcript: transcriptionText,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Call n8n webhook with timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), N8N_CONFIG.timeout);
+                
+                const response = await fetch(N8N_CONFIG.webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`n8n webhook returned status ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                // Check if n8n returned flashcards
+                if (result.flashcards && Array.isArray(result.flashcards) && result.flashcards.length > 0) {
                         sessionData.flashcards = result.flashcards;
                         
                         // Save flashcards to Firebase
-                        if (sessionData.id && sessionData.id !== 'demo') {
+                    if (sessionData.id && sessionData.id !== 'demo' && window.electronAPI && window.electronAPI.saveFlashcards) {
                             const saveResult = await window.electronAPI.saveFlashcards(sessionData.id, result.flashcards);
                             if (saveResult.success) {
                                 console.log('Flashcards saved to Firebase');
@@ -2699,19 +3274,31 @@
                             }
                         }
                         
-                        alert(`Successfully generated ${result.flashcards.length} flashcards!`);
+                    alert(`✅ Successfully generated ${result.flashcards.length} flashcards via n8n!`);
                     } else {
-                        throw new Error(result.error || 'Failed to generate flashcards');
-                    }
-                } else {
-                    throw new Error('Flashcard generation not available');
+                    throw new Error('Invalid response format from n8n webhook - expected flashcards array');
                 }
                 
             } catch (error) {
                 console.error('Error generating flashcards:', error);
-                alert(`Failed to generate flashcards: ${error.message}`);
                 
-                // Fallback to demo flashcards
+                // Provide specific error messages based on error type
+                let errorMessage = '';
+                if (error.name === 'AbortError') {
+                    errorMessage = `⏱️ Request timed out after ${N8N_CONFIG.timeout / 1000} seconds. Please check your n8n workflow performance.`;
+                } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMessage = `🌐 Network error: Could not connect to n8n webhook.\n\nPlease check:\n- Your n8n instance is running\n- Webhook URL is correct: ${N8N_CONFIG.webhookUrl}\n- Network connectivity`;
+                } else if (error.message.includes('status')) {
+                    errorMessage = `⚠️ n8n webhook error: ${error.message}`;
+                } else {
+                    errorMessage = `❌ Failed to generate flashcards: ${error.message}`;
+                }
+                
+                alert(errorMessage);
+                
+                // Fallback to demo flashcards for development
+                const useDemoFallback = confirm('Would you like to use demo flashcards for testing?');
+                if (useDemoFallback) {
                 sessionData.flashcards = [
                     {
                         question: 'What is supervised learning?',
@@ -2724,8 +3311,19 @@
                     {
                         question: 'What type of data does unsupervised learning use?',
                         answer: 'Unsupervised learning uses unlabeled data to find patterns and structures without known outputs.'
+                        },
+                        {
+                            question: 'What is the main difference between supervised and unsupervised learning?',
+                            answer: 'Supervised learning uses labeled data with known outputs, while unsupervised learning finds patterns in unlabeled data without known outputs.'
+                        },
+                        {
+                            question: 'What does CRISP-DM stand for?',
+                            answer: 'CRISP-DM stands for Cross-Industry Standard Process for Data Mining, a methodology for data science projects.'
                     }
                 ];
+                    alert('Demo flashcards loaded for testing purposes.');
+                }
+                
             } finally {
                 // Restore button state
                 generateBtn.disabled = false;
@@ -2942,6 +3540,148 @@
             initializeTheme();
             await initializePage();
         });
+
+        function showAddFlashcardModal() {
+            currentEditingIndex = null;
+            document.getElementById('addFlashcardModal').classList.add('active');
+            // Clear form fields
+            document.getElementById('question').value = '';
+            document.getElementById('answer').value = '';
+            // Update modal for adding
+            document.getElementById('modal-title').textContent = 'Add Flashcard';
+            document.querySelector('.modal-actions button[type="submit"]').textContent = 'Add Flashcard';
+            // Focus on question input
+            setTimeout(() => {
+                document.getElementById('question').focus();
+            }, 300);
+            // Add keyboard event listener for Escape key
+            document.addEventListener('keydown', handleModalKeydown);
+        }
+
+        function editFlashcard(index, event) {
+            // Stop the card flip event from firing
+            event.stopPropagation();
+            
+            currentEditingIndex = index;
+            const card = sessionData.flashcards[index];
+            
+            document.getElementById('addFlashcardModal').classList.add('active');
+            // Fill form fields with current card data
+            document.getElementById('question').value = card.question;
+            document.getElementById('answer').value = card.answer;
+            // Update modal for editing
+            document.getElementById('modal-title').textContent = 'Edit Flashcard';
+            document.querySelector('.modal-actions button[type="submit"]').textContent = 'Save Changes';
+            // Focus on question input
+            setTimeout(() => {
+                document.getElementById('question').focus();
+            }, 300);
+            // Add keyboard event listener for Escape key
+            document.addEventListener('keydown', handleModalKeydown);
+        }
+
+        function closeAddFlashcardModal() {
+            document.getElementById('addFlashcardModal').classList.remove('active');
+            // Clear form fields
+            document.getElementById('question').value = '';
+            document.getElementById('answer').value = '';
+            // Reset editing state
+            currentEditingIndex = null;
+            // Remove keyboard event listener
+            document.removeEventListener('keydown', handleModalKeydown);
+        }
+
+        function handleModalKeydown(event) {
+            if (event.key === 'Escape') {
+                closeAddFlashcardModal();
+            }
+        }
+
+        function handleAddFlashcardSubmit(event) {
+            event.preventDefault();
+            addFlashcard();
+        }
+
+        async function addFlashcard() {
+            const questionInput = document.getElementById('question');
+            const answerInput = document.getElementById('answer');
+            const question = questionInput.value.trim();
+            const answer = answerInput.value.trim();
+            
+            if (!question || !answer) {
+                alert('Please fill in both question and answer fields.');
+                return;
+            }
+            
+            try {
+                // Initialize flashcards array if needed
+                if (!sessionData.flashcards) {
+                    sessionData.flashcards = [];
+                }
+                
+                if (currentEditingIndex !== null) {
+                    // Edit existing flashcard
+                    sessionData.flashcards[currentEditingIndex] = { question, answer };
+                    console.log('✅ Flashcard updated successfully');
+                } else {
+                    // Add new flashcard
+                    sessionData.flashcards.push({ question, answer });
+                    console.log('✅ Flashcard added successfully');
+                }
+                
+                // Save to Firebase if available
+                if (sessionData.id && sessionData.id !== 'demo' && window.electronAPI && window.electronAPI.saveFlashcards) {
+                    const saveResult = await window.electronAPI.saveFlashcards(sessionData.id, sessionData.flashcards);
+                    if (saveResult.success) {
+                        console.log('Flashcards saved to Firebase');
+                    } else {
+                        console.error('Failed to save flashcards to Firebase:', saveResult.error);
+                    }
+                }
+                
+                // Update UI
+                checkFlashcards();
+                closeAddFlashcardModal();
+                
+            } catch (error) {
+                console.error('Error saving flashcard:', error);
+                alert('Failed to save flashcard. Please try again.');
+            }
+        }
+
+        async function deleteFlashcard(index, event) {
+            // Stop the card flip event from firing
+            event.stopPropagation();
+            
+            const card = sessionData.flashcards[index];
+            const confirmDelete = confirm(`Are you sure you want to delete this flashcard?\n\nQuestion: ${card.question}`);
+            
+            if (!confirmDelete) return;
+            
+            try {
+                // Remove from local data
+                sessionData.flashcards.splice(index, 1);
+                
+                // Save to Firebase if available
+                if (sessionData.id && sessionData.id !== 'demo' && window.electronAPI && window.electronAPI.saveFlashcards) {
+                    const saveResult = await window.electronAPI.saveFlashcards(sessionData.id, sessionData.flashcards);
+                    if (saveResult.success) {
+                        console.log('Flashcard deleted from Firebase');
+                    } else {
+                        console.error('Failed to delete flashcard from Firebase:', saveResult.error);
+                    }
+                }
+                
+                // Update UI
+                checkFlashcards();
+                
+                console.log('✅ Flashcard deleted successfully');
+                
+            } catch (error) {
+                console.error('Error deleting flashcard:', error);
+                alert('Failed to delete flashcard. Please try again.');
+            }
+        }
     </script>
 </body>
 </html> 
