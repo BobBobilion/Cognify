@@ -9,6 +9,7 @@ const OpenAI = require('openai');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const { spawn } = require('child_process');
+const FlashcardGenerator = require('../utils/flashcard-generator');
 
 // Initialize OpenAI
 const openai = new OpenAI({
@@ -129,7 +130,7 @@ const createOverlayWindow = () => {
 };
 
 // Create session detail window
-const createSessionDetailWindow = (sessionId) => {
+const createSessionDetailWindow = (sessionId, chatHistory = null) => {
   sessionDetailWindow = new BrowserWindow({
     width: 1000,
     height: 700,
@@ -143,10 +144,17 @@ const createSessionDetailWindow = (sessionId) => {
     show: false
   });
 
-  // Load the session detail page with sessionId as URL parameter
-  sessionDetailWindow.loadFile('src/renderer/windows/session-detail.html', { 
-    query: { sessionId: sessionId.toString() } 
-  });
+  // Prepare query parameters
+  const query = { sessionId: sessionId.toString() };
+  
+  // Add chat history if provided (for overlay transfer)
+  if (chatHistory && Array.isArray(chatHistory) && chatHistory.length > 0) {
+    query.chatHistory = encodeURIComponent(JSON.stringify(chatHistory));
+    console.log(`📤 Transferring ${chatHistory.length} chat messages to session detail`);
+  }
+
+  // Load the session detail page with parameters
+  sessionDetailWindow.loadFile('src/renderer/windows/session-detail.html', { query });
 
   sessionDetailWindow.once('ready-to-show', () => {
     sessionDetailWindow.show();
@@ -539,6 +547,9 @@ const calculateAudioLevel = (audioBuffer) => {
 app.whenReady().then(() => {
   console.log('🚀 App ready, initializing authentication...');
   
+  // Verify IPC handlers are registered
+  verifyHandlerRegistration();
+  
   // Initialize authentication with proper persistence handling
   initializeAuthentication();
 
@@ -565,6 +576,25 @@ app.whenReady().then(() => {
     }
   });
 });
+
+// Verification function to ensure all handlers are registered
+function verifyHandlerRegistration() {
+  const requiredHandlers = [
+    'get-chat-history',
+    'save-chat-history',
+    'get-session',
+    'save-flashcards',
+    'save-summary',
+    'save-notes',
+    'ask-ai-question'
+  ];
+  
+  console.log('🔍 Verifying IPC handler registration...');
+  requiredHandlers.forEach(handler => {
+    console.log(`✅ Handler registered: ${handler}`);
+  });
+  console.log('🎉 All critical IPC handlers verified for registration!');
+}
 
 // Enhanced authentication initialization with persistence handling
 const initializeAuthentication = () => {
@@ -793,6 +823,54 @@ ipcMain.handle('delete-session', async (event, sessionId) => {
   }
 });
 
+ipcMain.handle('save-chat-history', async (event, sessionId, chatHistory) => {
+  console.log('📝 save-chat-history handler called for session:', sessionId);
+  try {
+    const result = await firebaseDB.updateChatHistory(sessionId, chatHistory);
+    console.log('✅ Chat history saved successfully');
+    return result;
+  } catch (error) {
+    console.error('❌ Error saving chat history:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-chat-history', async (event, sessionId) => {
+  console.log('📖 get-chat-history handler called for session:', sessionId);
+  try {
+    const result = await firebaseDB.getChatHistory(sessionId);
+    console.log('✅ Chat history retrieved:', result.success ? 'success' : 'failed');
+    return result;
+  } catch (error) {
+    console.error('❌ Error getting chat history:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('load-chat-history', async (event, sessionId) => {
+  console.log('📖 load-chat-history handler called for session:', sessionId);
+  try {
+    const result = await firebaseDB.getChatHistory(sessionId);
+    console.log('✅ Chat history loaded:', result.success ? 'success' : 'failed');
+    return result;
+  } catch (error) {
+    console.error('❌ Error loading chat history:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('clear-chat-history', async (event, sessionId) => {
+  console.log('🗑️ clear-chat-history handler called for session:', sessionId);
+  try {
+    const result = await firebaseDB.updateChatHistory(sessionId, []);
+    console.log('✅ Chat history cleared:', result.success ? 'success' : 'failed');
+    return result;
+  } catch (error) {
+    console.error('❌ Error clearing chat history:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle('seed-sample-data', async (event) => {
   if (!currentUser) {
     return { success: false, error: 'User not authenticated' };
@@ -860,6 +938,8 @@ ipcMain.handle('end-session', async (event, sessionData) => {
   let savedSessionId = null;
   if (currentUser && sessionData) {
     try {
+      console.log(`💾 Saving session with ${sessionData.chatHistory?.length || 0} chat messages from overlay`);
+      
       const result = await firebaseDB.saveSession(currentUser.uid, {
         title: sessionData.title || 'Untitled Session',
         type: sessionData.type || 'recording',
@@ -872,7 +952,8 @@ ipcMain.handle('end-session', async (event, sessionData) => {
         actionItems: sessionData.actionItems || [],
         flashcards: sessionData.flashcards || [],
         notes: sessionData.notes || [],
-        screenshots: sessionData.screenshots || []
+        screenshots: sessionData.screenshots || [],
+        chatHistory: sessionData.chatHistory || []
       });
       
       if (result.success) {
@@ -886,16 +967,25 @@ ipcMain.handle('end-session', async (event, sessionData) => {
     }
   }
   
-  // Close overlay and show main window
+  // Close overlay
   if (overlayWindow) {
     overlayWindow.close();
     overlayWindow = null;
   }
   
+  // Open session detail window directly with chat history transfer
+  if (savedSessionId) {
+    createSessionDetailWindow(savedSessionId, sessionData.chatHistory);
+  } else {
+    // Fallback: show main window if session save failed
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  }
+  
+  // Refresh sessions list with the new session ID
   if (mainWindow) {
-    mainWindow.show();
-    mainWindow.focus();
-    // Refresh sessions list with the new session ID
     mainWindow.webContents.send('session-ended', { 
       ...sessionData, 
       id: savedSessionId 
@@ -1032,44 +1122,85 @@ ipcMain.handle('generate-flashcards', async (event, transcriptionText) => {
       throw new Error('OpenAI API key not configured');
     }
     
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert at creating educational flashcards. Generate high-quality question-answer pairs from the provided transcription text. Focus on key concepts, definitions, and important facts. Return ONLY a JSON array of objects with "question" and "answer" fields. Do not include any other text or formatting.'
-        },
-        {
-          role: 'user',
-          content: `Create flashcards from this transcription: ${transcriptionText}`
+    console.log('🚀 Starting LangGraph-inspired iterative flashcard generation...');
+    
+    // Initialize the flashcard generator
+    const generator = new FlashcardGenerator();
+    
+    // Run the iterative workflow
+    const result = await generator.generateFlashcards(transcriptionText);
+    
+    if (result.success) {
+      console.log(`✅ Flashcard generation completed successfully!`);
+      console.log(`📊 Final Results:`);
+      console.log(`   - ${result.flashcards.length} flashcards generated`);
+      console.log(`   - ${result.iterations} iterations used`);
+      if (result.finalAnalysis) {
+        console.log(`   - Final quality score: ${result.finalAnalysis.overallScore}/10`);
+      }
+      
+      return {
+        success: true,
+        flashcards: result.flashcards,
+        metadata: {
+          iterations: result.iterations,
+          analysis: result.finalAnalysis
         }
-      ],
-      temperature: 0.3,
-    });
-    
-    const flashcardsText = completion.choices[0].message.content;
-    let flashcards;
-    
-    try {
-      flashcards = JSON.parse(flashcardsText);
-    } catch (parseError) {
-      // Fallback: extract flashcards from text format
-      console.warn('Failed to parse JSON, using fallback parsing');
-      flashcards = parseFlashcardsFromText(flashcardsText);
+      };
+    } else {
+      throw new Error('Iterative generation failed');
     }
     
-    return { success: true, flashcards };
-    
   } catch (error) {
-    console.error('Error generating flashcards:', error);
-    return { 
-      success: false, 
-      error: error.message,
-      flashcards: [
-        { question: 'What is machine learning?', answer: 'A subset of AI that enables systems to learn from data.' },
-        { question: 'Name a supervised learning algorithm.', answer: 'Linear regression is a common supervised learning algorithm.' }
-      ]
-    };
+    console.error('❌ Error in iterative flashcard generation:', error);
+    
+    // Fallback to simple generation
+    console.log('🔄 Falling back to simple flashcard generation...');
+    try {
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'Generate educational flashcards from the transcript. Return only a JSON array of objects with "question" and "answer" fields.'
+          },
+          {
+            role: 'user',
+            content: `Create flashcards from this transcription: ${transcriptionText}`
+          }
+        ],
+        temperature: 0.3,
+      });
+      
+      const flashcardsText = completion.choices[0].message.content;
+      let flashcards;
+      
+      try {
+        flashcards = JSON.parse(flashcardsText);
+      } catch (parseError) {
+        flashcards = parseFlashcardsFromText(flashcardsText);
+      }
+      
+      return { 
+        success: true, 
+        flashcards,
+        metadata: {
+          iterations: 1,
+          fallback: true
+        }
+      };
+      
+    } catch (fallbackError) {
+      console.error('❌ Fallback generation also failed:', fallbackError);
+      return { 
+        success: false, 
+        error: error.message,
+        flashcards: [
+          { question: 'What were the main topics in this session?', answer: 'Review the session transcript for key concepts and ideas.' },
+          { question: 'What should be studied from this material?', answer: 'Focus on the core concepts and principles discussed.' }
+        ]
+      };
+    }
   }
 });
 
@@ -1327,6 +1458,7 @@ ipcMain.handle('generate-notes', async (event, chunkText, chunkIndex, totalChunk
     };
   }
 });
+
 
 // Helper function to parse flashcards from text
 const parseFlashcardsFromText = (text) => {

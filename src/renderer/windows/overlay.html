@@ -613,6 +613,7 @@
         let micPeak = 0;
         let isAmplitudeMonitoring = false;
         let animationFrame = null;
+        let chatHistory = []; // Store chat messages for transfer to session
 
         // Initialize overlay
         function initializeOverlay() {
@@ -641,6 +642,18 @@
                     }
                 });
             }
+
+            // Add the initial AI greeting to chat history (matching the displayed message)
+            const initialGreeting = "Hi! I'm your AI assistant powered by GPT-4. I can help answer questions about your session in real-time!";
+            const timestamp = new Date();
+            const initialMessage = {
+                id: Date.now() + Math.random(),
+                sender: 'ai',
+                message: initialGreeting,
+                timestamp: timestamp
+            };
+            chatHistory.push(initialMessage);
+            console.log('🤖 Added initial AI greeting to chat history');
 
             // Initialize microphone monitoring
             initializeMicrophoneMonitoring();
@@ -1021,6 +1034,19 @@
             messagesContainer.appendChild(message);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
             
+            // Store chat message for session transfer (exclude thinking messages)
+            if (sender !== 'thinking') {
+                const timestamp = new Date();
+                const chatMessage = {
+                    id: Date.now() + Math.random(),
+                    sender: sender, // 'user' or 'ai'
+                    message: text,
+                    timestamp: timestamp
+                };
+                chatHistory.push(chatMessage);
+                console.log('💬 Chat message added to overlay history:', sender, text.substring(0, 50) + '...');
+            }
+            
             return message; // Return for potential removal (thinking messages)
         }
 
@@ -1035,12 +1061,14 @@
                 stopMicrophoneMonitoring();
                 
                 console.log('Ending session and opening main app...');
+                console.log(`📝 Transferring ${chatHistory.length} chat messages to session`);
                 
                 if (window.electronAPI) {
                     window.electronAPI.endSession({
                         startTime: sessionStartTime,
                         duration: sessionStartTime ? Math.floor((new Date() - sessionStartTime) / 1000) : 0,
-                        transcription: transcriptionData
+                        transcription: transcriptionData,
+                        chatHistory: chatHistory // Include chat history from overlay
                     });
                 }
                 

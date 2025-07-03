@@ -203,13 +203,201 @@
             display: block;
         }
 
+        .transcript-layout {
+            display: flex;
+            gap: 1.5rem;
+            height: calc(100vh - 300px);
+            min-height: 600px;
+        }
+
+        .transcript-main {
+            flex: 1;
+            min-width: 0;
+        }
+
         .transcript-container {
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 1.5rem;
-            max-height: 600px;
+            height: 100%;
             overflow-y: auto;
+        }
+
+        .chat-panel {
+            width: 400px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 1rem;
+            height: fit-content;
+            max-height: calc(100vh - 180px);
+            flex-shrink: 0;
+        }
+
+        .chat-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-primary);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .chat-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .chat-clear-btn {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-clear-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-height: 300px;
+            max-height: 400px;
+        }
+
+        .chat-message {
+            display: flex;
+            margin-bottom: 1rem;
+        }
+
+        .chat-message.user-message {
+            justify-content: flex-end;
+        }
+
+        .chat-message.ai-message {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 85%;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .user-message .message-content {
+            background: var(--accent-blue);
+            color: white;
+            border-bottom-right-radius: 4px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        .ai-message .message-content {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-text {
+            line-height: 1.5;
+            font-size: 0.8rem;
+        }
+
+        .chat-input-container {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            border-radius: 0 0 12px 12px;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 0.5rem;
+            align-items: end;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            resize: none;
+            min-height: 80px;
+            max-height: 160px;
+            transition: border-color 0.2s ease;
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+
+        .chat-send-btn {
+            background: var(--accent-blue);
+            border: 1px solid var(--accent-blue);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .chat-send-btn:hover {
+            background: var(--accent-blue-hover);
+            border-color: var(--accent-blue-hover);
+        }
+
+        .chat-send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .chat-thinking {
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        .chat-thinking .message-text::after {
+            content: "...";
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: "..."; }
+            40% { content: "...."; }
+            60% { content: "....."; }
+            80%, 100% { content: "..."; }
         }
 
         .transcript-entry {
@@ -763,43 +951,7 @@
             left: 0;
         }
 
-        .qa-assistant {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-top: 1.5rem;
-        }
 
-        .qa-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-        }
-
-        .qa-input {
-            width: 100%;
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px;
-            color: var(--text-primary);
-            font-size: 0.875rem;
-            margin-bottom: 1rem;
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .qa-input::placeholder {
-            color: var(--text-tertiary);
-        }
-
-        .qa-input:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
 
         @media (max-width: 768px) {
             .header {
@@ -827,6 +979,35 @@
             .btn {
                 width: 100%;
                 justify-content: center;
+            }
+
+            .transcript-layout {
+                flex-direction: column;
+                height: auto;
+                min-height: auto;
+                gap: 1rem;
+            }
+
+            .chat-panel {
+                width: 100%;
+                position: static;
+                max-height: 400px;
+                margin-top: 0;
+                order: -1; /* Show chat first on mobile */
+            }
+
+            .transcript-container {
+                height: 400px;
+            }
+
+            .chat-messages {
+                max-height: 250px;
+                min-height: 200px;
+            }
+
+            .chat-input {
+                min-height: 60px;
+                max-height: 120px;
             }
         }
     </style>
@@ -862,19 +1043,42 @@
 
         <!-- Transcript Tab -->
         <div id="transcript-content" class="tab-content active">
+            <div class="transcript-layout">
+                <div class="transcript-main">
             <div class="transcript-container" id="transcript-container">
                 <!-- Transcript entries will be loaded here -->
+                    </div>
             </div>
             
-            <div class="qa-assistant">
-                <h3 class="qa-title">Q&A Assistant</h3>
-                <textarea class="qa-input" placeholder="Ask a question about this session..." id="qa-input"></textarea>
-                <button class="btn" onclick="askQuestion()">
+                <div class="chat-panel">
+                    <div class="chat-header">
+                        <h3 class="chat-title">AI Assistant</h3>
+                        <button class="chat-clear-btn" onclick="clearChat()" title="Clear chat history">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-message ai-message">
+                            <div class="message-content">
+                                <div class="message-text">Hello! I'm your AI assistant. I can help answer questions about this session. Ask me anything!</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-container">
+                        <form class="chat-input-wrapper" onsubmit="handleChatSubmit(event)">
+                            <textarea class="chat-input" placeholder="Ask a question about this session..." id="chat-input" rows="1"></textarea>
+                            <button type="submit" class="chat-send-btn" id="chat-send-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                     </svg>
-                    Ask Question
                 </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1267,6 +1471,9 @@
 
         // Current session data (will be set based on URL parameter)
         let sessionData = null;
+        
+        // Chat history for the current session
+        let chatHistory = [];
 
         function getSessionIdFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -1338,6 +1545,9 @@
             checkFlashcards();
             checkExistingSummary();
             checkExistingNotes();
+            
+            // Initialize chat
+            await initializeChat();
         }
 
         function loadTranscript() {
@@ -1630,51 +1840,309 @@
             }
         }
 
-        async function askQuestion() {
-            const input = document.getElementById('qa-input');
-            const question = input.value.trim();
-            if (!question) return;
+        async function initializeChat() {
+            try {
+                // Load existing chat history from Firebase
+                if (sessionData.id && sessionData.id !== 'demo' && window.electronAPI && window.electronAPI.loadChatHistory) {
+                    const result = await window.electronAPI.loadChatHistory(sessionData.id);
+                    if (result.success && result.chatHistory) {
+                        chatHistory = result.chatHistory;
+                        console.log(`Loaded ${chatHistory.length} chat messages from Firebase`);
+                    }
+                }
+                
+                // Load chat history from overlay transfer if available
+                const urlParams = new URLSearchParams(window.location.search);
+                const transferredChat = urlParams.get('chatHistory');
+                if (transferredChat) {
+                    try {
+                        const decodedChat = JSON.parse(decodeURIComponent(transferredChat));
+                        if (Array.isArray(decodedChat) && decodedChat.length > 0) {
+                            // Merge with existing chat history, avoiding duplicates
+                            const existingIds = new Set(chatHistory.map(msg => msg.id));
+                            const newMessages = decodedChat.filter(msg => !existingIds.has(msg.id));
+                            chatHistory = [...chatHistory, ...newMessages];
+                            console.log(`Transferred ${newMessages.length} messages from overlay`);
+                        }
+                    } catch (error) {
+                        console.error('Error parsing transferred chat history:', error);
+                    }
+                }
+                
+                // Render chat history
+                renderChatHistory();
+                
+                // Initialize chat input features
+                initializeChatInput();
+                
+            } catch (error) {
+                console.error('Error initializing chat:', error);
+            }
+        }
+        
+        function initializeChatInput() {
+            const chatInput = document.getElementById('chat-input');
+            const sendBtn = document.getElementById('chat-send-btn');
             
-            const askBtn = event.target;
-            const originalText = askBtn.innerHTML;
+            if (!chatInput) return;
+            
+            // Auto-resize chat input
+            chatInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 160) + 'px';
+            });
+            
+            // Send message on Enter (but allow Shift+Enter for new line)
+            // Note: Form submission will handle Enter key, but this provides backup
+            chatInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    // Let the form handle it naturally
+                }
+            });
+            
+            // Update send button state based on input
+            chatInput.addEventListener('input', function() {
+                const hasText = this.value.trim().length > 0;
+                sendBtn.disabled = !hasText;
+            });
+            
+            // Initial state
+            sendBtn.disabled = true;
+        }
+        
+        function renderChatHistory() {
+            const messagesContainer = document.getElementById('chat-messages');
+            if (!messagesContainer) return;
+            
+            // Clear existing messages except the initial AI greeting
+            messagesContainer.innerHTML = '';
+            
+            // Add initial AI greeting if no chat history
+            if (chatHistory.length === 0) {
+                const greeting = document.createElement('div');
+                greeting.className = 'chat-message ai-message';
+                greeting.innerHTML = `
+                    <div class="message-content">
+                        <div class="message-text">Hello! I'm your AI assistant. I can help answer questions about this session. Ask me anything!</div>
+                    </div>
+                `;
+                messagesContainer.appendChild(greeting);
+            } else {
+                // Render existing chat history
+                chatHistory.forEach(message => {
+                    addChatMessageToUI(message.sender, message.message, message.timestamp, false);
+                });
+            }
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        function handleChatSubmit(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            sendChatMessage();
+            return false;
+        }
+
+        async function sendChatMessage() {
+            const chatInput = document.getElementById('chat-input');
+            const sendBtn = document.getElementById('chat-send-btn');
+            
+            if (!chatInput || !sendBtn) return;
+            
+            const message = chatInput.value.trim();
+            if (!message) return;
+            
+            // Disable input and button
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+            
+            // Add user message to UI and history
+            const userMessage = {
+                id: Date.now() + Math.random(),
+                sender: 'user',
+                message: message,
+                timestamp: new Date()
+            };
+            
+            chatHistory.push(userMessage);
+            addChatMessageToUI('user', message, new Date(), true);
+            
+            // Clear input
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            
+            // Add thinking indicator
+            const thinkingMessage = addThinkingMessage();
             
             try {
-                // Show loading state
-                askBtn.disabled = true;
-                askBtn.innerHTML = `
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
-                        <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
-                    </svg>
-                    Thinking...
-                `;
+                // Prepare context with chat history and transcription
+                const context = prepareChatContext(message);
                 
-                // Prepare context from transcription
-                const context = sessionData.transcript
-                    .map(entry => `[${entry.timestamp}] ${entry.text}`)
-                    .join('\n');
-                
-                // Call the AI service
-                if (window.electronAPI && window.electronAPI.askAIQuestion) {
-                    const result = await window.electronAPI.askAIQuestion(question, context);
+                // Call AI service
+                if (window.electronAPI && window.electronAPI.chatWithAI) {
+                    const result = await window.electronAPI.chatWithAI(context);
+                    
+                    // Remove thinking indicator
+                    thinkingMessage.remove();
                     
                     if (result.success) {
-                        // Show the answer in an alert or modal
-                        alert(`Q: ${question}\n\nA: ${result.answer}`);
-                        input.value = ''; // Clear the input
+                        // Add AI response to UI and history
+                        const aiMessage = {
+                            id: Date.now() + Math.random(),
+                            sender: 'ai',
+                            message: result.message,
+                            timestamp: new Date()
+                        };
+                        
+                        chatHistory.push(aiMessage);
+                        addChatMessageToUI('ai', result.message, new Date(), true);
+                        
+                        // Save chat history to Firebase
+                        await saveChatHistory();
+                        
                     } else {
                         throw new Error(result.error || 'Failed to get AI response');
                     }
                 } else {
-                    throw new Error('AI assistant not available');
+                    throw new Error('AI chat service not available');
                 }
                 
             } catch (error) {
-                console.error('Error asking AI question:', error);
-                alert(`Failed to get AI response: ${error.message}\n\nQuestion: ${question}`);
+                console.error('Error sending chat message:', error);
+                
+                // Remove thinking indicator
+                thinkingMessage.remove();
+                
+                // Add error message
+                const errorMessage = {
+                    id: Date.now() + Math.random(),
+                    sender: 'ai',
+                    message: 'Sorry, I encountered an error. Please try again.',
+                    timestamp: new Date()
+                };
+                
+                chatHistory.push(errorMessage);
+                addChatMessageToUI('ai', 'Sorry, I encountered an error. Please try again.', new Date(), true);
+                
             } finally {
-                // Restore button state
-                askBtn.disabled = false;
-                askBtn.innerHTML = originalText;
+                // Re-enable input and button
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                chatInput.focus();
+            }
+        }
+        
+        function addChatMessageToUI(sender, message, timestamp, scrollToBottom = false) {
+            const messagesContainer = document.getElementById('chat-messages');
+            if (!messagesContainer) return;
+            
+            const messageElement = document.createElement('div');
+            messageElement.className = `chat-message ${sender}-message`;
+            
+            messageElement.innerHTML = `
+                <div class="message-content">
+                    <div class="message-text">${message}</div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageElement);
+            
+            if (scrollToBottom) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+        
+        function addThinkingMessage() {
+            const messagesContainer = document.getElementById('chat-messages');
+            if (!messagesContainer) return;
+            
+            const thinkingElement = document.createElement('div');
+            thinkingElement.className = 'chat-message ai-message chat-thinking';
+            thinkingElement.innerHTML = `
+                <div class="message-content">
+                    <div class="message-text">Thinking</div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(thinkingElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            return thinkingElement;
+        }
+        
+        function prepareChatContext(currentMessage) {
+            // Build context with session transcript
+            let context = `Session: ${sessionData.title}\n\n`;
+            
+            // Add transcript context
+            if (sessionData.transcript && sessionData.transcript.length > 0) {
+                context += 'Transcript:\n';
+                context += sessionData.transcript
+                    .map(entry => `[${entry.timestamp}] ${entry.text}`)
+                    .join('\n');
+                context += '\n\n';
+            }
+            
+            // Add recent chat history for context (last 5 messages)
+            if (chatHistory.length > 1) {
+                context += 'Recent conversation:\n';
+                const recentMessages = chatHistory.slice(-5, -1); // Exclude current message
+                recentMessages.forEach(msg => {
+                    context += `${msg.sender}: ${msg.message}\n`;
+                });
+                context += '\n';
+            }
+            
+            // Add current user message
+            context += `user: ${currentMessage}`;
+            
+            return context;
+        }
+        
+        async function saveChatHistory() {
+            try {
+                if (sessionData.id && sessionData.id !== 'demo' && window.electronAPI && window.electronAPI.saveChatHistory) {
+                    const result = await window.electronAPI.saveChatHistory(sessionData.id, chatHistory);
+                    if (result.success) {
+                        console.log('Chat history saved to Firebase');
+                    } else {
+                        console.error('Failed to save chat history:', result.error);
+                    }
+                }
+            } catch (error) {
+                console.error('Error saving chat history:', error);
+            }
+        }
+        
+        async function clearChat() {
+            if (!confirm('Are you sure you want to clear the chat history? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                // Clear local chat history
+                chatHistory = [];
+                
+                // Clear UI
+                renderChatHistory();
+                
+                // Clear from Firebase
+                if (sessionData.id && sessionData.id !== 'demo' && window.electronAPI && window.electronAPI.clearChatHistory) {
+                    const result = await window.electronAPI.clearChatHistory(sessionData.id);
+                    if (result.success) {
+                        console.log('Chat history cleared from Firebase');
+                } else {
+                        console.error('Failed to clear chat history from Firebase:', result.error);
+                    }
+                }
+                
+                console.log('Chat history cleared');
+                
+            } catch (error) {
+                console.error('Error clearing chat history:', error);
+                alert('Failed to clear chat history. Please try again.');
             }
         }
 

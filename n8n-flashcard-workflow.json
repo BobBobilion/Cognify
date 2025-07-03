@@ -1,0 +1,472 @@
+{
+  "name": "Cognify Smart Flashcard Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-flashcards",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "4f8b9c2d-1a3e-4567-89ab-123456789abc",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300],
+      "webhookId": "cognify-flashcards"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "transcript",
+              "name": "transcript",
+              "value": "={{ $json.body.transcript }}",
+              "type": "string"
+            },
+            {
+              "id": "sessionId",
+              "name": "sessionId",
+              "value": "={{ $json.body.sessionId || 'default' }}",
+              "type": "string"
+            },
+            {
+              "id": "iteration",
+              "name": "iteration",
+              "value": 1,
+              "type": "number"
+            },
+            {
+              "id": "maxIterations",
+              "name": "maxIterations",
+              "value": 5,
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "5a1b2c3d-4e5f-6789-0123-456789abcdef",
+      "name": "Initialize Variables",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "chatId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "messages": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are an expert educational content creator. Generate high-quality flashcards from transcript content.\n\nCreate 6-12 flashcards that:\n- Focus on key concepts, definitions, and important facts\n- Have clear, specific questions\n- Provide comprehensive but concise answers\n- Vary in question types (definitions, explanations, applications)\n- Are appropriately challenging (not too easy/hard)\n\nReturn ONLY a JSON array:\n[\n  {\"question\": \"...\", \"answer\": \"...\"},\n  {\"question\": \"...\", \"answer\": \"...\"}\n]"
+            },
+            {
+              "role": "user",
+              "content": "Create flashcards from this content:\n\n{{ $('Initialize Variables').item.json.transcript }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 2000
+        }
+      },
+      "id": "6b2c3d4e-5f60-7891-2345-6789abcdef01",
+      "name": "Generate Flashcards",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.3,
+      "position": [600, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse and validate flashcards from OpenAI response\nconst response = $input.first().json.message.content;\nconst currentIteration = $('Initialize Variables').item.json.iteration;\n\ntry {\n  // Clean response and extract JSON\n  let cleanResponse = response.replace(/```json\\n?|```\\n?/g, '').trim();\n  \n  // Try direct JSON parse first\n  let flashcards;\n  try {\n    flashcards = JSON.parse(cleanResponse);\n  } catch (e) {\n    // Fallback: extract JSON array from text\n    const jsonMatch = cleanResponse.match(/\\[(.*?)\\]/s);\n    if (jsonMatch) {\n      flashcards = JSON.parse('[' + jsonMatch[1] + ']');\n    } else {\n      throw new Error('No valid JSON found in response');\n    }\n  }\n  \n  // Validate array structure\n  if (!Array.isArray(flashcards)) {\n    throw new Error('Response is not an array');\n  }\n  \n  // Filter valid flashcards\n  const validCards = flashcards.filter(card => \n    card && \n    typeof card === 'object' &&\n    card.question && \n    card.answer &&\n    typeof card.question === 'string' && \n    typeof card.answer === 'string' &&\n    card.question.trim().length > 5 &&\n    card.answer.trim().length > 5\n  );\n  \n  if (validCards.length === 0) {\n    throw new Error('No valid flashcards extracted');\n  }\n  \n  console.log(`✅ Iteration ${currentIteration}: Parsed ${validCards.length} flashcards`);\n  \n  return {\n    success: true,\n    flashcards: validCards,\n    count: validCards.length,\n    iteration: currentIteration,\n    sessionId: $('Initialize Variables').item.json.sessionId,\n    transcript: $('Initialize Variables').item.json.transcript,\n    maxIterations: $('Initialize Variables').item.json.maxIterations\n  };\n  \n} catch (error) {\n  console.error(`❌ Error parsing flashcards:`, error.message);\n  \n  // Create fallback flashcards\n  const fallbackCards = [\n    {\n      question: \"What is the main topic discussed in this session?\",\n      answer: \"The session covers the key concepts presented in the transcript.\"\n    },\n    {\n      question: \"What are the important takeaways from this content?\",\n      answer: \"The main insights and learning points from the material.\"\n    }\n  ];\n  \n  return {\n    success: false,\n    error: error.message,\n    flashcards: fallbackCards,\n    count: fallbackCards.length,\n    iteration: currentIteration,\n    sessionId: $('Initialize Variables').item.json.sessionId,\n    transcript: $('Initialize Variables').item.json.transcript,\n    maxIterations: $('Initialize Variables').item.json.maxIterations,\n    fallback: true\n  };\n}"
+      },
+      "id": "7c3d4e5f-6071-8912-3456-789abcdef012",
+      "name": "Parse Flashcards",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "chatId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "messages": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are an educational quality assessor. Analyze flashcard quality and provide scores.\n\nEvaluate these criteria (1-10 scale):\n1. COMPREHENSIVENESS: Do flashcards cover important concepts adequately?\n2. COMPLEXITY: Is difficulty level appropriate (not too easy/hard)?\n3. QUALITY: Are questions clear, answers accurate, educational value high?\n\nProvide analysis in this EXACT JSON format:\n{\n  \"comprehensiveness\": 8,\n  \"complexity\": 7,\n  \"quality\": 9,\n  \"overallScore\": 8.0,\n  \"feedback\": \"Specific improvement suggestions\"\n}\n\nBe critical but fair. Score 7.5+ overall indicates excellent quality."
+            },
+            {
+              "role": "user",
+              "content": "Analyze these {{ $('Parse Flashcards').item.json.count }} flashcards:\n\n{{ JSON.stringify($('Parse Flashcards').item.json.flashcards, null, 2) }}\n\nOriginal content context:\n{{ $('Parse Flashcards').item.json.transcript.substring(0, 500) }}..."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 400
+        }
+      },
+      "id": "8d4e5f60-7182-9013-4567-89abcdef0123",
+      "name": "Quality Analysis",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.3,
+      "position": [1000, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse quality analysis and make improvement decision\nconst analysisResponse = $input.first().json.message.content;\nconst flashcardsData = $('Parse Flashcards').item.json;\n\ntry {\n  // Parse the quality analysis\n  const cleanResponse = analysisResponse.replace(/```json\\n?|```\\n?/g, '').trim();\n  const analysis = JSON.parse(cleanResponse);\n  \n  // Validate analysis structure\n  const requiredFields = ['comprehensiveness', 'complexity', 'quality', 'overallScore'];\n  for (const field of requiredFields) {\n    if (typeof analysis[field] !== 'number') {\n      throw new Error(`Missing or invalid ${field} in analysis`);\n    }\n  }\n  \n  // Decision logic for improvement\n  const needsImprovement = (\n    analysis.overallScore < 7.5 || \n    analysis.comprehensiveness < 6 || \n    analysis.complexity < 6 || \n    analysis.quality < 6\n  ) && flashcardsData.iteration < flashcardsData.maxIterations;\n  \n  const decision = {\n    analysis: analysis,\n    flashcards: flashcardsData.flashcards,\n    iteration: flashcardsData.iteration,\n    maxIterations: flashcardsData.maxIterations,\n    sessionId: flashcardsData.sessionId,\n    transcript: flashcardsData.transcript,\n    needsImprovement: needsImprovement,\n    isComplete: !needsImprovement,\n    success: flashcardsData.success\n  };\n  \n  if (flashcardsData.fallback) {\n    decision.fallback = true;\n  }\n  \n  console.log(`📊 Quality Analysis - Iteration ${flashcardsData.iteration}:`);\n  console.log(`   Overall: ${analysis.overallScore}/10`);\n  console.log(`   Comprehensiveness: ${analysis.comprehensiveness}/10`);\n  console.log(`   Complexity: ${analysis.complexity}/10`);\n  console.log(`   Quality: ${analysis.quality}/10`);\n  console.log(`   Needs Improvement: ${needsImprovement}`);\n  \n  return decision;\n  \n} catch (error) {\n  console.error('❌ Error parsing quality analysis:', error.message);\n  \n  // Fallback: assume good quality to complete the process\n  const fallbackAnalysis = {\n    comprehensiveness: 7,\n    complexity: 7,\n    quality: 7,\n    overallScore: 7.0,\n    feedback: \"Analysis parsing failed - using fallback assessment\"\n  };\n  \n  return {\n    analysis: fallbackAnalysis,\n    flashcards: flashcardsData.flashcards,\n    iteration: flashcardsData.iteration,\n    maxIterations: flashcardsData.maxIterations,\n    sessionId: flashcardsData.sessionId,\n    transcript: flashcardsData.transcript,\n    needsImprovement: false,\n    isComplete: true,\n    success: flashcardsData.success,\n    error: error.message\n  };\n}"
+      },
+      "id": "9e5f6071-8293-0124-5678-9abcdef01234",
+      "name": "Quality Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "improvement-needed",
+              "leftValue": "={{ $json.needsImprovement }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "af607182-9304-1235-6789-abcdef012345",
+      "name": "Improvement Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1400, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "chatId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "messages": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are an expert educational content improver. Enhance existing flashcards based on quality analysis feedback.\n\nImprovement Guidelines:\n- Address the specific feedback provided\n- Maintain similar number of flashcards (6-12)\n- Improve question clarity and specificity\n- Enhance answer completeness and accuracy\n- Adjust difficulty level appropriately\n- Better cover important concepts\n- Fix identified issues\n\nReturn ONLY a JSON array:\n[\n  {\"question\": \"Improved question...\", \"answer\": \"Improved answer...\"},\n  {\"question\": \"...\", \"answer\": \"...\"}\n]"
+            },
+            {
+              "role": "user",
+              "content": "🔄 ITERATION {{ $json.iteration }} - IMPROVE FLASHCARDS:\n\nCurrent flashcards:\n{{ JSON.stringify($json.flashcards, null, 2) }}\n\n📊 Quality Analysis:\n• Overall Score: {{ $json.analysis.overallScore }}/10\n• Comprehensiveness: {{ $json.analysis.comprehensiveness }}/10\n• Complexity: {{ $json.analysis.complexity }}/10\n• Quality: {{ $json.analysis.quality }}/10\n• Feedback: {{ $json.analysis.feedback }}\n\nContent context:\n{{ $json.transcript.substring(0, 600) }}...\n\nImprove the flashcards based on this analysis."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.8,
+          "maxTokens": 2000
+        }
+      },
+      "id": "b0718293-0415-2346-789a-bcdef0123456",
+      "name": "Improve Flashcards",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.3,
+      "position": [1400, 150],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse improved flashcards and prepare next iteration\nconst improvedResponse = $input.first().json.message.content;\nconst previousData = $('Quality Decision').item.json;\n\ntry {\n  // Parse improved flashcards\n  let cleanResponse = improvedResponse.replace(/```json\\n?|```\\n?/g, '').trim();\n  \n  let improvedFlashcards;\n  try {\n    improvedFlashcards = JSON.parse(cleanResponse);\n  } catch (e) {\n    const jsonMatch = cleanResponse.match(/\\[(.*?)\\]/s);\n    if (jsonMatch) {\n      improvedFlashcards = JSON.parse('[' + jsonMatch[1] + ']');\n    } else {\n      throw new Error('Could not extract JSON from improved response');\n    }\n  }\n  \n  // Validate improved flashcards\n  if (!Array.isArray(improvedFlashcards)) {\n    throw new Error('Improved response is not an array');\n  }\n  \n  const validImproved = improvedFlashcards.filter(card => \n    card && \n    typeof card === 'object' &&\n    card.question && \n    card.answer &&\n    typeof card.question === 'string' && \n    typeof card.answer === 'string' &&\n    card.question.trim().length > 5 &&\n    card.answer.trim().length > 5\n  );\n  \n  if (validImproved.length === 0) {\n    throw new Error('No valid improved flashcards found');\n  }\n  \n  const nextIteration = previousData.iteration + 1;\n  console.log(`🔄 Iteration ${previousData.iteration}: Improved to ${validImproved.length} flashcards`);\n  \n  return {\n    flashcards: validImproved,\n    count: validImproved.length,\n    iteration: nextIteration,\n    maxIterations: previousData.maxIterations,\n    sessionId: previousData.sessionId,\n    transcript: previousData.transcript,\n    success: true\n  };\n  \n} catch (error) {\n  console.error(`❌ Error parsing improved flashcards:`, error.message);\n  \n  // Fall back to previous flashcards if improvement fails\n  return {\n    flashcards: previousData.flashcards,\n    count: previousData.flashcards.length,\n    iteration: previousData.iteration + 1,\n    maxIterations: previousData.maxIterations,\n    sessionId: previousData.sessionId,\n    transcript: previousData.transcript,\n    success: false,\n    error: error.message\n  };\n}"
+      },
+      "id": "c1829304-1526-3457-89ab-cdef01234567",
+      "name": "Parse Improvements",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1600, 150]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "flashcards",
+              "name": "flashcards",
+              "value": "={{ $json.flashcards }}",
+              "type": "array"
+            },
+            {
+              "id": "iteration",
+              "name": "iteration",
+              "value": "={{ $json.iteration }}",
+              "type": "number"
+            },
+            {
+              "id": "transcript",
+              "name": "transcript",
+              "value": "={{ $json.transcript }}",
+              "type": "string"
+            },
+            {
+              "id": "sessionId",
+              "name": "sessionId",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "maxIterations",
+              "name": "maxIterations",
+              "value": "={{ $json.maxIterations }}",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "d2930415-2637-4568-9abc-def012345678",
+      "name": "Update for Next Iteration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [1800, 150]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare final comprehensive response\nconst inputData = $input.first().json;\n\n// Determine if this came from improvement loop or direct completion\nconst hasAnalysis = inputData.analysis !== undefined;\n\nconst finalResponse = {\n  success: true,\n  flashcards: inputData.flashcards,\n  metadata: {\n    iterations: inputData.iteration,\n    maxIterations: inputData.maxIterations || 5,\n    totalCards: inputData.flashcards.length,\n    sessionId: inputData.sessionId,\n    generatedAt: new Date().toISOString(),\n    processingComplete: true\n  }\n};\n\n// Add quality analysis if available\nif (hasAnalysis && inputData.analysis) {\n  finalResponse.metadata.finalAnalysis = {\n    overallScore: inputData.analysis.overallScore,\n    comprehensiveness: inputData.analysis.comprehensiveness,\n    complexity: inputData.analysis.complexity,\n    quality: inputData.analysis.quality,\n    feedback: inputData.analysis.feedback\n  };\n  \n  console.log(`📊 Final Quality Scores:`);\n  console.log(`   Overall: ${inputData.analysis.overallScore}/10`);\n  console.log(`   Comprehensiveness: ${inputData.analysis.comprehensiveness}/10`);\n  console.log(`   Complexity: ${inputData.analysis.complexity}/10`);\n  console.log(`   Quality: ${inputData.analysis.quality}/10`);\n}\n\n// Add metadata flags\nif (inputData.fallback) {\n  finalResponse.metadata.fallback = true;\n  finalResponse.metadata.notes = [\"Used fallback generation due to parsing issues\"];\n}\n\nif (inputData.error) {\n  finalResponse.metadata.warnings = [inputData.error];\n}\n\nif (!inputData.success) {\n  finalResponse.metadata.processingIssues = true;\n}\n\n// Log completion\nconst iterationsUsed = inputData.iteration;\nconst cardsGenerated = inputData.flashcards.length;\nconsole.log(`🎉 FLASHCARD GENERATION COMPLETE!`);\nconsole.log(`   📚 Generated: ${cardsGenerated} flashcards`);\nconsole.log(`   🔄 Iterations: ${iterationsUsed}/${inputData.maxIterations}`);\nconsole.log(`   📋 Session: ${inputData.sessionId}`);\n\nreturn finalResponse;"
+      },
+      "id": "e3041526-3748-5679-abcd-ef0123456789",
+      "name": "Final Response Builder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1600, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "id": "f4152637-4859-6789-bcde-f01234567890",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1800, 400]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Initialize Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Variables": {
+      "main": [
+        [
+          {
+            "node": "Generate Flashcards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Flashcards": {
+      "main": [
+        [
+          {
+            "node": "Parse Flashcards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Flashcards": {
+      "main": [
+        [
+          {
+            "node": "Quality Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Analysis": {
+      "main": [
+        [
+          {
+            "node": "Quality Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Decision": {
+      "main": [
+        [
+          {
+            "node": "Improvement Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Improvement Check": {
+      "main": [
+        [
+          {
+            "node": "Improve Flashcards",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Final Response Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Improve Flashcards": {
+      "main": [
+        [
+          {
+            "node": "Parse Improvements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Improvements": {
+      "main": [
+        [
+          {
+            "node": "Update for Next Iteration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update for Next Iteration": {
+      "main": [
+        [
+          {
+            "node": "Quality Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Response Builder": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-07-02T00:00:00.000Z",
+      "updatedAt": "2024-07-02T00:00:00.000Z",
+      "id": "cognify",
+      "name": "cognify"
+    },
+    {
+      "createdAt": "2024-07-02T00:00:00.000Z",
+      "updatedAt": "2024-07-02T00:00:00.000Z",
+      "id": "education",
+      "name": "education"
+    },
+    {
+      "createdAt": "2024-07-02T00:00:00.000Z",
+      "updatedAt": "2024-07-02T00:00:00.000Z",
+      "id": "ai",
+      "name": "ai"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-07-02T16:00:00.000Z",
+  "versionId": "1.0.0"
+} 

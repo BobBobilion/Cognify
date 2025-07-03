@@ -150,6 +150,44 @@ class FirebaseDB {
       return { success: false, error: error.message };
     }
   }
+
+  // Update session chat history
+  async updateChatHistory(sessionId, chatHistory) {
+    try {
+      const chatHistoryWithTimestamps = chatHistory.map(msg => ({
+        ...msg,
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp.toISOString() : msg.timestamp
+      }));
+      
+      return this.updateSession(sessionId, { chatHistory: chatHistoryWithTimestamps });
+    } catch (error) {
+      console.error('Error updating chat history:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Get chat history for a session
+  async getChatHistory(sessionId) {
+    try {
+      const sessionResult = await this.getSession(sessionId);
+      if (!sessionResult.success) {
+        return { success: false, error: sessionResult.error };
+      }
+
+      const chatHistory = sessionResult.session.chatHistory || [];
+      
+      // Convert timestamp strings back to Date objects for consistency
+      const chatHistoryWithDates = chatHistory.map(msg => ({
+        ...msg,
+        timestamp: typeof msg.timestamp === 'string' ? new Date(msg.timestamp) : msg.timestamp
+      }));
+
+      return { success: true, chatHistory: chatHistoryWithDates };
+    } catch (error) {
+      console.error('Error getting chat history:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 module.exports = new FirebaseDB(); 

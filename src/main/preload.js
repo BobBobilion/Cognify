@@ -59,6 +59,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteSession: (sessionId) => ipcRenderer.invoke('delete-session', sessionId),
   seedSampleData: () => ipcRenderer.invoke('seed-sample-data'),
   askAIQuestion: (question, context) => ipcRenderer.invoke('ask-ai-question', question, context),
+  saveChatHistory: (sessionId, chatHistory) => ipcRenderer.invoke('save-chat-history', sessionId, chatHistory),
+  loadChatHistory: (sessionId) => ipcRenderer.invoke('load-chat-history', sessionId),
+  clearChatHistory: (sessionId) => ipcRenderer.invoke('clear-chat-history', sessionId),
   
   // Event listeners
   onAuthStateChanged: (callback) => {
