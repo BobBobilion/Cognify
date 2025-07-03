@@ -1893,10 +1893,22 @@
             });
             
             // Send message on Enter (but allow Shift+Enter for new line)
-            // Note: Form submission will handle Enter key, but this provides backup
             chatInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
-                    // Let the form handle it naturally
+                    e.preventDefault();
+                    e.stopPropagation();
+                    sendChatMessage();
+                    return false;
+                }
+            });
+            
+            // Backup keypress handler for maximum compatibility
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    sendChatMessage();
+                    return false;
                 }
             });
             
@@ -1941,6 +1953,7 @@
         function handleChatSubmit(event) {
             event.preventDefault();
             event.stopPropagation();
+            event.stopImmediatePropagation();
             sendChatMessage();
             return false;
         }
@@ -1953,6 +1966,10 @@
             
             const message = chatInput.value.trim();
             if (!message) return;
+            
+            // Clear input immediately for responsive feedback
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
             
             // Disable input and button
             chatInput.disabled = true;
@@ -1968,10 +1985,6 @@
             
             chatHistory.push(userMessage);
             addChatMessageToUI('user', message, new Date(), true);
-            
-            // Clear input
-            chatInput.value = '';
-            chatInput.style.height = 'auto';
             
             // Add thinking indicator
             const thinkingMessage = addThinkingMessage();
