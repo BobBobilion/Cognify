@@ -19,6 +19,7 @@
             --accent-green: #10b981;
             --accent-green-hover: #059669;
             --accent-purple: #8b5cf6;
+            --accent-purple-hover: #7c3aed;
             --accent-orange: #f59e0b;
             --danger-color: #ef4444;
             --danger-hover: #dc2626;
@@ -694,6 +695,8 @@
                         <div class="filter-chip" onclick="filterByType('yuja')">YuJa</div>
                     </div>
 
+
+
                     <div class="sessions-grid" id="sessions-grid">
                         <!-- Sessions will be loaded here -->
                     </div>
@@ -805,7 +808,7 @@
             if (window.electronAPI && window.electronAPI.startRecording) {
                 window.electronAPI.startRecording();
             } else {
-                alert('Recording functionality will be implemented with the overlay widget.');
+                showInfo('Recording functionality will be implemented with the overlay widget.');
             }
         }
 
@@ -815,11 +818,11 @@
                 if (window.electronAPI && window.electronAPI.openAmplitudeMonitor) {
                     await window.electronAPI.openAmplitudeMonitor();
                 } else {
-                    alert('Amplitude monitor functionality is not available.');
+                    showWarning('Amplitude monitor functionality is not available.');
                 }
             } catch (error) {
                 console.error('Failed to open amplitude monitor:', error);
-                alert('Failed to open amplitude monitor: ' + error.message);
+                showError('Failed to open amplitude monitor: ' + error.message);
             }
         }
 
@@ -965,10 +968,10 @@
                     // Redirect will happen automatically via main.js
                     updateAuthUI(null);
                 } else {
-                    alert('Failed to sign out: ' + result.error);
+                    showError('Failed to sign out: ' + result.error);
                 }
             } catch (error) {
-                alert('Sign out error: ' + error.message);
+                showError('Sign out error: ' + error.message);
             }
         }
 
@@ -987,22 +990,22 @@
                 `;
                 
                 if (!currentUser) {
-                    alert('Please sign in first to add sample data to your account.');
+                    showWarning('Please sign in first to add sample data to your account.');
                     return;
                 }
                 
                 const result = await window.electronAPI.seedSampleData();
                 
                 if (result.success) {
-                    alert(`🎉 Success! Added ${result.seededCount} sample sessions to your account. You can now explore Cognify's AI features like generating flashcards and summaries!`);
+                    showSuccess(`Success! Added ${result.seededCount} sample sessions to your account. You can now explore Cognify's AI features like generating flashcards and summaries!`);
                     // Refresh sessions will happen automatically via IPC event
                 } else {
-                    alert(`Failed to add sample data: ${result.error}`);
+                    showError(`Failed to add sample data: ${result.error}`);
                 }
                 
             } catch (error) {
                 console.error('Error adding sample data:', error);
-                alert(`Error adding sample data: ${error.message}`);
+                showError(`Error adding sample data: ${error.message}`);
             } finally {
                 // Restore button state
                 btn.disabled = false;
@@ -1015,13 +1018,15 @@
             event.stopPropagation();
             
             // Show confirmation dialog
-            const confirmed = confirm(
-                `Are you sure you want to delete "${sessionTitle}"?\n\n` +
-                `This will permanently remove:\n` +
-                `• All transcripts and recordings\n` +
-                `• AI-generated summaries and notes\n` +
-                `• Flashcards and screenshots\n\n` +
-                `This action cannot be undone.`
+            const confirmed = await showConfirm(
+                `Are you sure you want to delete "${sessionTitle}"?\n\nThis will permanently remove:\n• All transcripts and recordings\n• AI-generated summaries and notes\n• Flashcards and screenshots\n\nThis action cannot be undone.`,
+                {
+                    title: 'Delete Session',
+                    confirmText: 'Delete',
+                    cancelText: 'Cancel',
+                    type: 'warning',
+                    confirmType: 'danger'
+                }
             );
             
             if (!confirmed) {
@@ -1042,7 +1047,7 @@
                 `;
                 
                 if (!currentUser) {
-                    alert('You must be signed in to delete sessions.');
+                    showWarning('You must be signed in to delete sessions.');
                     return;
                 }
                 
@@ -1057,15 +1062,15 @@
                     renderSessions();
                     
                     // Show success message
-                    alert(`Session "${sessionTitle}" has been deleted successfully.`);
+                    showSuccess(`Session "${sessionTitle}" has been deleted successfully.`);
                 } else {
                     console.error('Failed to delete session:', result.error);
-                    alert(`Failed to delete session: ${result.error}`);
+                    showError(`Failed to delete session: ${result.error}`);
                 }
                 
             } catch (error) {
                 console.error('Error deleting session:', error);
-                alert(`Error deleting session: ${error.message}`);
+                showError(`Error deleting session: ${error.message}`);
             } finally {
                 // Restore button state
                 deleteBtn.disabled = false;
@@ -1128,6 +1133,10 @@
             }
         });
         
+
+
+
+
         // Cleanup on window unload
         window.addEventListener('beforeunload', () => {
             if (window.electronAPI) {
@@ -1135,5 +1144,6 @@
             }
         });
     </script>
+    <script src="../../utils/notification-system.js"></script>
 </body>
 </html> 

@@ -663,7 +663,7 @@
             helpMessage += `• Online meetings and classes\n`;
             helpMessage += `• Any scenario where you need to hear AND speak`;
             
-            alert(helpMessage);
+            showInfo(helpMessage, { title: 'System Audio Help', duration: 0 });
         }
 
         // Stop monitoring function
@@ -749,7 +749,7 @@
             statusMessage += '• Works alongside other audio applications\n';
             statusMessage += '• Uses shared audio mode instead of exclusive access';
             
-            alert(statusMessage);
+            showInfo(statusMessage, { title: 'Audio Monitor Status', duration: 0 });
         });
 
         // Initialize when page loads
@@ -765,5 +765,6 @@
             stopMonitoring();
         });
     </script>
+    <script src="../../utils/notification-system.js"></script>
 </body>
 </html>

@@ -473,7 +473,15 @@
         }
         
         async function endSession() {
-            if (confirm('End recording session and open main app?')) {
+            const confirmed = await showConfirm('End recording session and open main app?', {
+                title: 'End Session',
+                confirmText: 'End Session',
+                cancelText: 'Continue Recording',
+                type: 'warning',
+                confirmType: 'danger'
+            });
+            
+            if (confirmed) {
                 // Stop recording if active
                 if (isRecording) {
                     await toggleRecording();
@@ -540,5 +548,6 @@
             }
         });
     </script>
+    <script src="../../utils/notification-system.js"></script>
 </body>
 </html> 
