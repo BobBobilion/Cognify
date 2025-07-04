@@ -29,6 +29,10 @@
             {
               "name": "sessionId",
               "value": "={{ $json.body.sessionId || 'default' }}"
+            },
+            {
+              "name": "requestId",
+              "value": "={{ $json.body.requestId || 'req_' + Date.now() }}"
             }
           ],
           "number": [
@@ -72,7 +76,7 @@
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
       "position": [
-        -1440,
+        -1220,
         -260
       ],
       "credentials": {
@@ -91,7 +95,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        -1220,
+        -1000,
         -260
       ]
     },
@@ -114,7 +118,7 @@
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
       "position": [
-        -1000,
+        -780,
         -260
       ],
       "credentials": {
@@ -126,14 +130,14 @@
     },
     {
       "parameters": {
-        "jsCode": "// === Helper: Try parse anything into JSON safely ===\nfunction tryParseJson(input) {\n  try {\n    return typeof input === 'string' ? JSON.parse(input) : input;\n  } catch (e) {\n    return null;\n  }\n}\n\n// === Step 1: Get raw AI response ===\nconst input = $input.first().json;\n\n// Handle the specific structure from your input\nlet rawContent = null;\n\n// Check if it's an array with message content\nif (Array.isArray(input) && input.length > 0) {\n  rawContent = input[0]?.message?.content;\n} else if (input?.choices?.[0]?.message?.content) {\n  // OpenAI format\n  rawContent = input.choices[0].message.content;\n} else if (input?.message?.content) {\n  // Direct message format\n  rawContent = input.message.content;\n} else if (typeof input === 'string') {\n  // Direct string\n  rawContent = input;\n} else {\n  // Fallback to stringify\n  rawContent = JSON.stringify(input);\n}\n\n// === Step 2: Parse the content string to extract flashcards ===\nlet flashcards = [];\n\nif (rawContent) {\n  // Clean up the content string\n  let cleaned = String(rawContent)\n    .replace(/```(?:json)?/gi, '')\n    .replace(/\\\\n/g, '\\n')\n    .replace(/\\\\\"/g, '\"')\n    .trim();\n\n  // Try to parse as JSON directly\n  let parsed = tryParseJson(cleaned);\n  \n  // If it's already an array, use it\n  if (Array.isArray(parsed)) {\n    flashcards = parsed;\n  } else if (parsed && typeof parsed === 'object') {\n    // If it's an object, look for array properties\n    const possibleArrays = Object.values(parsed).filter(Array.isArray);\n    if (possibleArrays.length > 0) {\n      flashcards = possibleArrays[0];\n    }\n  } else {\n    // Try to extract array from string using regex\n    const arrayMatch = cleaned.match(/\\[[\\s\\S]*\\]/);\n    if (arrayMatch) {\n      const arrayParsed = tryParseJson(arrayMatch[0]);\n      if (Array.isArray(arrayParsed)) {\n        flashcards = arrayParsed;\n      }\n    }\n  }\n}\n\n// === Step 3: Validate and filter flashcards ===\nconst validFlashcards = flashcards.filter(card =>\n  card &&\n  typeof card === 'object' &&\n  typeof card.question === 'string' &&\n  typeof card.answer === 'string' &&\n  card.question.trim().length >= 4 &&\n  card.answer.trim().length >= 8\n);\n\n// === Step 4: Get context from upstream node (with fallbacks) ===\nlet ctx = {};\ntry {\n  ctx = $node[\"Parse Concepts\"]?.json || {};\n} catch (e) {\n  // If Parse Concepts node doesn't exist, use defaults\n  ctx = {};\n}\n\n// Set default values if not available\nconst sessionId = ctx.sessionId || `session_${Date.now()}`;\nconst conceptCount = ctx.conceptCount || validFlashcards.length;\nconst priorityBreakdown = ctx.priorityBreakdown || { high: 0, medium: 0, low: 0 };\nconst iteration = ctx.iteration || 1;\nconst maxIterations = ctx.maxIterations || 5;\n\n// === Step 5: Return successful response ===\nif (validFlashcards.length > 0) {\n  return {\n    success: true,\n    flashcards: validFlashcards,\n    count: validFlashcards.length,\n    sessionId: sessionId,\n    conceptsUsed: conceptCount,\n    conceptBreakdown: priorityBreakdown,\n    needsImprovement: validFlashcards.length < 8 && iteration < maxIterations,\n    iteration: iteration,\n    maxIterations: maxIterations,\n    generationMethod: 'concept-based'\n  };\n}\n\n// === Step 6: Return empty array if no valid cards found ===\nconst fallbackCards = [];\n\nreturn {\n  success: false,\n  flashcards: fallbackCards,\n  error: 'No valid flashcards found after filtering',\n  count: fallbackCards.length,\n  sessionId: sessionId,\n  conceptsUsed: conceptCount,\n  conceptBreakdown: priorityBreakdown,\n  needsImprovement: false,\n  iteration: iteration,\n  maxIterations: maxIterations,\n  fallback: true,\n  generationMethod: 'concept-based-fallback'\n};"
+        "jsCode": "// === Helper: Try parse anything into JSON safely ===\nfunction tryParseJson(input) {\n  try {\n    return typeof input === 'string' ? JSON.parse(input) : input;\n  } catch (e) {\n    return null;\n  }\n}\n\n// === Step 1: Get raw AI response ===\nconst input = $input.first().json;\n\n// Handle the specific structure from your input\nlet rawContent = null;\n\n// Check if it's an array with message content\nif (Array.isArray(input) && input.length > 0) {\n  rawContent = input[0]?.message?.content;\n} else if (input?.choices?.[0]?.message?.content) {\n  // OpenAI format\n  rawContent = input.choices[0].message.content;\n} else if (input?.message?.content) {\n  // Direct message format\n  rawContent = input.message.content;\n} else if (typeof input === 'string') {\n  // Direct string\n  rawContent = input;\n} else {\n  // Fallback to stringify\n  rawContent = JSON.stringify(input);\n}\n\n// === Step 2: Parse the content string to extract flashcards ===\nlet flashcards = [];\n\nif (rawContent) {\n  // Clean up the content string\n  let cleaned = String(rawContent)\n    .replace(/```(?:json)?/gi, '')\n    .replace(/\\\\n/g, '\\n')\n    .replace(/\\\\\"/g, '\"')\n    .trim();\n\n  // Try to parse as JSON directly\n  let parsed = tryParseJson(cleaned);\n  \n  // If it's already an array, use it\n  if (Array.isArray(parsed)) {\n    flashcards = parsed;\n  } else if (parsed && typeof parsed === 'object') {\n    // If it's an object, look for array properties\n    const possibleArrays = Object.values(parsed).filter(Array.isArray);\n    if (possibleArrays.length > 0) {\n      flashcards = possibleArrays[0];\n    }\n  } else {\n    // Try to extract array from string using regex\n    const arrayMatch = cleaned.match(/\\[[\\s\\S]*\\]/);\n    if (arrayMatch) {\n      const arrayParsed = tryParseJson(arrayMatch[0]);\n      if (Array.isArray(arrayParsed)) {\n        flashcards = arrayParsed;\n      }\n    }\n  }\n}\n\n// === Step 3: Validate and filter flashcards ===\nconst validFlashcards = flashcards.filter(card =>\n  card &&\n  typeof card === 'object' &&\n  typeof card.question === 'string' &&\n  typeof card.answer === 'string' &&\n  card.question.trim().length >= 4 &&\n  card.answer.trim().length >= 8\n);\n\n// === Step 4: Get context from upstream node (with fallbacks) ===\nlet ctx = {};\ntry {\n  ctx = $node[\"Parse Concepts\"]?.json || {};\n} catch (e) {\n  // If Parse Concepts node doesn't exist, use defaults\n  ctx = {};\n}\n\n// Set default values if not available\nconst sessionId = ctx.sessionId || `session_${Date.now()}`;\nconst conceptCount = ctx.conceptCount || validFlashcards.length;\nconst priorityBreakdown = ctx.priorityBreakdown || { high: 0, medium: 0, low: 0 };\nconst iteration = ctx.iteration || 1;\nconst maxIterations = ctx.maxIterations || 5;\n\n// === Step 5: Return successful response ===\nif (validFlashcards.length > 0) {\n  return {\n    success: true,\n    flashcards: validFlashcards,\n    count: validFlashcards.length,\n    sessionId: sessionId,\n    conceptsUsed: conceptCount,\n    conceptBreakdown: priorityBreakdown,\n    needsImprovement: validFlashcards.length < 8 && iteration < maxIterations,\n    iteration: iteration,\n    maxIterations: maxIterations,\n    generationMethod: 'concept-based'\n  };\n}\n\n// === Step 6: Fallback if no valid cards found ===\nconst fallbackCards = [\n  {\n    question: \"What are the main concepts covered in this educational content?\",\n    answer: \"The content covers several important concepts including key definitions, processes, and practical applications relevant to the subject matter.\"\n  },\n  {\n    question: \"Why are these concepts important for students to understand?\",\n    answer: \"These concepts form the foundation of knowledge in this subject area and are essential for further learning and practical application.\"\n  },\n  {\n    question: \"How can students apply the knowledge from this session?\",\n    answer: \"Students can apply this knowledge through practice exercises, real-world problem solving, and by connecting these concepts to related topics.\"\n  }\n];\n\nreturn {\n  success: false,\n  flashcards: fallbackCards,\n  error: 'No valid flashcards found after filtering',\n  count: fallbackCards.length,\n  sessionId: sessionId,\n  conceptsUsed: conceptCount,\n  conceptBreakdown: priorityBreakdown,\n  needsImprovement: false,\n  iteration: iteration,\n  maxIterations: maxIterations,\n  fallback: true,\n  generationMethod: 'concept-based-fallback'\n};"
       },
       "id": "94cc8e8c-0262-4abe-a99b-19e170b58419",
       "name": "Parse Flashcards",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        -780,
+        -560,
         -260
       ]
     },
@@ -146,7 +150,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        -580,
+        -360,
         -480
       ]
     },
@@ -169,7 +173,7 @@
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
       "position": [
-        -380,
+        -160,
         -480
       ],
       "credentials": {
@@ -188,7 +192,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        -160,
+        60,
         -480
       ]
     },
@@ -199,6 +203,9 @@
             {
               "value1": "={{ $json.needsImprovement }}",
               "value2": true
+            },
+            {
+              "value2": true
             }
           ]
         }
@@ -208,7 +215,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        60,
+        280,
         -480
       ]
     },
@@ -231,7 +238,7 @@
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
       "position": [
-        -1000,
+        -780,
         -480
       ],
       "credentials": {
@@ -250,7 +257,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        -780,
+        -560,
         -480
       ]
     },
@@ -263,14 +270,64 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        320,
+        540,
         -460
       ]
     },
     {
       "parameters": {
+        "respondWith": "json",
+        "responseBody": "   {\n     \"success\": true,\n     \"status\": \"processing\",\n     \"message\": \"Flashcard generation started. Processing in background...\",\n     \"requestId\": \"{{ $node['Initialize Variables'].json['requestId'] || 'req_' + Date.now() }}\",\n     \"sessionId\": \"{{ $node['Initialize Variables'].json['sessionId'] }}\",\n     \"estimatedTime\": \"2-5 minutes\",\n     \"timestamp\": \"{{ new Date().toISOString() }}\"\n   }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1440,
+        -260
+      ],
+      "id": "0ab31c71-e529-4a96-97ef-dbf0e9e1aac7",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
         "method": "PATCH",
-        "url": "=https://firestore.googleapis.com/v1/projects/cognify-548a3/databases/(default)/documents/sessions/{{ $node['Final Response Builder'].json.metadata.sessionId }}",
+        "url": "=https://firestore.googleapis.com/v1/projects/cognify-548a3/databases/(default)/documents/flashcard-requests/{{ $node['Initialize Variables'].json['requestId'] || 'req_' + Date.now() }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"fields\": {\n    \"status\": {\n      \"stringValue\": \"completed\"\n    },\n    \"progress\": {\n      \"integerValue\": \"100\"\n    },\n    \"results\": {\n      \"mapValue\": {\n        \"fields\": {\n          \"flashcards\": {\n            \"arrayValue\": {\n              \"values\": {{ JSON.stringify($node['Final Response Builder'].json.flashcards.map(card => ({\n                \"mapValue\": {\n                  \"fields\": {\n                    \"question\": { \"stringValue\": card.question },\n                    \"answer\": { \"stringValue\": card.answer }\n                  }\n                }\n              }))) }}\n            }\n          },\n          \"count\": {\n            \"integerValue\": \"{{ $node['Final Response Builder'].json.flashcards.length }}\"\n          },\n          \"completedAt\": {\n            \"stringValue\": \"{{ new Date().toISOString() }}\"\n          },\n          \"metadata\": {\n            \"mapValue\": {\n              \"fields\": {\n                \"generationMethod\": {\n                  \"stringValue\": \"{{ $node['Final Response Builder'].json.metadata.generationMethod || 'concept-based' }}\"\n                },\n                \"totalConcepts\": {\n                  \"integerValue\": \"{{ $node['Final Response Builder'].json.metadata.conceptAnalysis.totalConcepts || 0 }}\"\n                },\n                \"improved\": {\n                  \"booleanValue\": {{ $node['Final Response Builder'].json.metadata.improved || false }}\n                },\n                \"processingTime\": {\n                  \"stringValue\": \"{{ new Date().toISOString() }}\"\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"updatedAt\": {\n      \"timestampValue\": \"{{ new Date().toISOString() }}\"\n    },\n    \"error\": {\n      \"nullValue\": null\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        -460
+      ],
+      "id": "ba574ed9-01e3-46cf-89e0-9918bbe2a60b",
+      "name": "HTTP Request",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "7BIwe6P4X18HQ5xg",
+          "name": "Google firebase COGNIFY"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://firestore.googleapis.com/v1/projects/cognify-548a3/databases/(default)/documents/sessions/{{ $node['Final Response Builder'].json.metadata.sessionId }}?updateMask.fieldPaths=flashcards&updateMask.fieldPaths=updatedAt",
         "authentication": "genericCredentialType",
         "genericAuthType": "oAuth2Api",
         "sendHeaders": true,
@@ -287,56 +344,20 @@
         "jsonBody": "={\n  \"fields\": {\n    \"flashcards\": {\n      \"arrayValue\": {\n        \"values\": {{ JSON.stringify($node['Final Response Builder'].json.flashcards.map(card => ({\n          \"mapValue\": {\n            \"fields\": {\n              \"question\": { \"stringValue\": card.question },\n              \"answer\": { \"stringValue\": card.answer }\n            }\n          }\n        }))) }}\n      }\n    },\n    \"updatedAt\": {\n      \"timestampValue\": \"{{ new Date().toISOString() }}\"\n    }\n  }\n}",
         "options": {}
       },
-      "id": "f8e4c7b2-93a1-4d5e-8f6a-1b2c3d4e5f60",
-      "name": "Update Session Flashcards",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        540,
+        720,
         -460
       ],
+      "id": "82bbdedd-0e01-45c3-9d0e-dc5f95a5be10",
+      "name": "Update Session Flashcards",
       "credentials": {
         "oAuth2Api": {
           "id": "7BIwe6P4X18HQ5xg",
           "name": "Google firebase COGNIFY"
         }
       }
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($json, null, 2) }}",
-        "options": {
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              },
-              {
-                "name": "Access-Control-Allow-Methods",
-                "value": "POST, OPTIONS"
-              },
-              {
-                "name": "Access-Control-Allow-Headers",
-                "value": "Content-Type, Authorization"
-              }
-            ]
-          }
-        }
-      },
-      "id": "01555c11-5ab5-4732-aae8-e0c29e523045",
-      "name": "Send Response",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        760,
-        -460
-      ]
     }
   ],
   "pinData": {},
@@ -356,7 +377,7 @@
       "main": [
         [
           {
-            "node": "Extract Concepts",
+            "node": "Respond to Webhook",
             "type": "main",
             "index": 0
           }
@@ -491,11 +512,27 @@
         ]
       ]
     },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Concepts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        []
+      ]
+    },
     "Update Session Flashcards": {
       "main": [
         [
           {
-            "node": "Send Response",
+            "node": "HTTP Request",
             "type": "main",
             "index": 0
           }
@@ -507,7 +544,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "3f436f9b-0d9a-4c6d-8851-bc3994f69c24",
+  "versionId": "06159c2a-e724-4b1c-88ea-31d7abc34d91",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "304854bba464753094d47904a80cc1b97958d7982642a8841539c1e44d30ce2d"
