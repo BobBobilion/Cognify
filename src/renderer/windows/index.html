@@ -553,7 +553,427 @@
         }
 
         /* Responsive Design */
+        /* Upload Video Styles */
+        .upload-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .upload-description {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .upload-options {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .upload-option {
+            flex: 1;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .upload-option h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .upload-dropzone {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            background: var(--bg-tertiary);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-dropzone:hover {
+            border-color: var(--accent-blue);
+            background: var(--accent-blue-light);
+        }
+
+        .upload-dropzone.dragover {
+            border-color: var(--accent-blue);
+            background: var(--accent-blue-light);
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            fill: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .upload-subtext {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+        }
+
+        .upload-info {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .upload-info p {
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .upload-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin: 0 1rem;
+        }
+
+        .upload-divider span {
+            background: var(--bg-primary);
+            padding: 0 1rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .upload-divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--border-color);
+            z-index: 1;
+        }
+
+        .upload-divider span {
+            position: relative;
+            z-index: 2;
+        }
+
+        .url-input-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: border-color 0.3s ease;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .processing-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .processing-progress {
+            margin-bottom: 2rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-blue);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .processing-steps {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .processing-step {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+        }
+
+        .processing-step.active {
+            background: var(--accent-blue-light);
+            color: var(--accent-blue);
+        }
+
+        .processing-step.completed {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .step-icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* Video Processing Overlay */
+        .processing-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .processing-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .processing-modal {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .processing-overlay.active .processing-modal {
+            transform: scale(1);
+        }
+
+        .processing-header {
+            margin-bottom: 2rem;
+        }
+
+        .processing-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 0.5rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .processing-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .processing-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .processing-main-progress {
+            margin: 2rem 0;
+        }
+
+        .processing-main-progress .progress-bar {
+            height: 12px;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            background: var(--bg-tertiary);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .processing-main-progress .progress-fill {
+            background: linear-gradient(90deg, var(--accent-blue), #60a5fa);
+            border-radius: 6px;
+            position: relative;
+            transition: width 0.5s ease;
+        }
+
+        .processing-main-progress .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 20px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2));
+            border-radius: 0 6px 6px 0;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-20px); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(20px); opacity: 0; }
+        }
+
+        .processing-percentage {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .processing-message {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .processing-steps-container {
+            margin-top: 2rem;
+        }
+
+        .processing-steps-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .processing-steps-overlay {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .processing-step-overlay {
+            flex: 1;
+            max-width: 150px;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .processing-step-overlay.active {
+            background: var(--accent-blue-light);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            transform: scale(1.05);
+        }
+
+        .processing-step-overlay.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: slideShine 2s infinite;
+        }
+
+        @keyframes slideShine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .processing-step-overlay.completed {
+            background: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+
+        .processing-step-icon {
+            width: 24px;
+            height: 24px;
+            margin: 0 auto 0.5rem;
+            fill: currentColor;
+        }
+
+        .processing-step-overlay.active .processing-step-icon {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .processing-step-text {
+            font-size: 0.85rem;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         @media (max-width: 768px) {
+            .processing-modal {
+                padding: 2rem;
+                margin: 1rem;
+            }
+
+            .processing-title {
+                font-size: 1.5rem;
+            }
+
+            .processing-steps-overlay {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .processing-step-overlay {
+                max-width: none;
+                padding: 0.75rem;
+            }
+
             .sidebar {
                 transform: translateX(-100%);
             }
@@ -589,6 +1009,30 @@
             .filter-bar {
                 flex-direction: column;
                 align-items: stretch;
+            }
+
+            .upload-options {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .upload-divider {
+                margin: 1rem 0;
+            }
+
+            .upload-divider::before {
+                transform: rotate(90deg);
+                height: 100px;
+                width: 1px;
+            }
+
+            .url-input-container {
+                flex-direction: column;
+            }
+
+            .processing-steps {
+                flex-direction: column;
+                gap: 1rem;
             }
         }
     </style>
@@ -640,6 +1084,12 @@
                         <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                     </svg>
                     Audio Monitor
+                </button>
+                <button class="nav-item" onclick="showUploadVideo()">
+                    <svg class="nav-icon" viewBox="0 0 24 24">
+                        <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zm-5-7v-2.5L12 13l4-3.5V12c0 .55-.45 1-1 1s-1-.45-1-1zM9 10v8l5.5-4L9 10z"/>
+                    </svg>
+                    Upload Video
                 </button>
                 <button class="nav-item" onclick="showSettings()">
                     <svg class="nav-icon" viewBox="0 0 24 24">
@@ -725,6 +1175,81 @@
             </div>
         </div>
         
+                <!-- Upload Video Content (hidden by default) -->
+                <div id="upload-video-content" style="display: none;">
+                    <div class="upload-container">
+                        <h2>Upload Video</h2>
+                        <p class="upload-description">Upload a video file or provide a video URL to extract audio and generate transcripts using AI.</p>
+                        
+                        <div class="upload-options">
+                            <div class="upload-option">
+                                <h3>📁 Upload Video File</h3>
+                                <div class="upload-dropzone" id="upload-dropzone">
+                                    <div class="upload-dropzone-content">
+                                        <svg class="upload-icon" viewBox="0 0 24 24">
+                                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                        </svg>
+                                        <p>Drag and drop your video file here</p>
+                                        <p class="upload-subtext">or</p>
+                                        <button class="btn btn-primary" onclick="selectVideoFile()">Choose Video File</button>
+                                        <input type="file" id="video-file-input" accept="video/*" style="display: none;" onchange="handleVideoFileSelect(event)">
+                                    </div>
+                                </div>
+                                <div class="upload-info">
+                                    <p><strong>Supported formats:</strong> MP4, MOV, AVI, MKV, WebM</p>
+                                    <p><strong>Max file size:</strong> 500MB</p>
+                                </div>
+                            </div>
+                            
+                            <div class="upload-divider">
+                                <span>OR</span>
+                            </div>
+                            
+                            <div class="upload-option">
+                                <h3>🔗 Video URL</h3>
+                                <div class="url-input-container">
+                                    <input type="url" id="video-url-input" placeholder="Paste video URL here (YouTube, Vimeo, etc.)" class="url-input">
+                                    <button class="btn btn-primary" onclick="processVideoUrl()">Process URL</button>
+                                </div>
+                                <div class="upload-info">
+                                    <p><strong>Supported sites:</strong> YouTube, Vimeo, Twitch, and more</p>
+                                    <p><strong>Note:</strong> We'll download the audio for transcription</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="processing-section" id="processing-section" style="display: none;">
+                            <h3>Processing Video</h3>
+                            <div class="processing-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="processing-progress-fill"></div>
+                                </div>
+                                <p class="progress-text" id="processing-progress-text">Preparing...</p>
+                            </div>
+                            <div class="processing-steps">
+                                <div class="processing-step" id="step-extract">
+                                    <svg class="step-icon" viewBox="0 0 24 24">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                    </svg>
+                                    <span>Extract Audio</span>
+                                </div>
+                                <div class="processing-step" id="step-transcribe">
+                                    <svg class="step-icon" viewBox="0 0 24 24">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                    </svg>
+                                    <span>Transcribe Audio (4x Speed)</span>
+                                </div>
+                                <div class="processing-step" id="step-save">
+                                    <svg class="step-icon" viewBox="0 0 24 24">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                    </svg>
+                                    <span>Save Document</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Settings Content (hidden by default) -->
                 <div id="settings-content" style="display: none;">
                     <h2>Settings</h2>
@@ -732,6 +1257,64 @@
                 </div>
         </div>
         </main>
+    </div>
+
+    <!-- Video Processing Overlay -->
+    <div class="processing-overlay" id="processing-overlay">
+        <div class="processing-modal">
+            <div class="processing-header">
+                <h2 class="processing-title">
+                    <div class="processing-spinner"></div>
+                    Processing Video
+                </h2>
+                <p class="processing-subtitle">Please wait while we process your video...</p>
+            </div>
+
+            <div class="processing-main-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="overlay-progress-fill"></div>
+                </div>
+                <div class="processing-percentage" id="overlay-progress-percentage">0%</div>
+                <p class="processing-message" id="overlay-progress-text">Preparing video processing...</p>
+            </div>
+
+            <div class="processing-steps-container">
+                <h3 class="processing-steps-title">Processing Steps</h3>
+                <div class="processing-steps-overlay">
+                    <div class="processing-step-overlay" id="overlay-step-extract">
+                        <svg class="processing-step-icon" viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
+                            <path d="M8 12h8v2H8zm0 4h8v2H8z"/>
+                        </svg>
+                        <div class="processing-step-text">Download & Extract Audio</div>
+                    </div>
+                    <div class="processing-step-overlay" id="overlay-step-transcribe">
+                        <svg class="processing-step-icon" viewBox="0 0 24 24">
+                            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                            <path d="M19 11h-2c0 3.31-2.69 6-6 6s-6-2.69-6-6H3c0 4.18 3.18 7.64 7.27 7.98v2.02H8v2h8v-2h-2.27V18.98C17.82 18.64 21 15.18 21 11h-2z"/>
+                        </svg>
+                        <div class="processing-step-text">AI Transcription (4x Speed)</div>
+                    </div>
+                    <div class="processing-step-overlay" id="overlay-step-save">
+                        <svg class="processing-step-icon" viewBox="0 0 24 24">
+                            <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm2 16H5V5h11.17L19 7.83V19zm-7-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                            <circle cx="12" cy="15" r="1"/>
+                        </svg>
+                        <div class="processing-step-text">Save Session Document</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 1rem;">
+                <button class="btn" onclick="hideProcessingUI()" id="processing-cancel-btn" 
+                        style="background: var(--bg-tertiary); color: var(--text-secondary); border-color: var(--border-color);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 0.5rem;">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                    Minimize
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -781,6 +1364,15 @@
             setActiveNav('dashboard');
             document.getElementById('page-title').textContent = 'Dashboard';
             document.getElementById('dashboard-content').style.display = 'block';
+            document.getElementById('upload-video-content').style.display = 'none';
+            document.getElementById('settings-content').style.display = 'none';
+        }
+
+        function showUploadVideo() {
+            setActiveNav('upload-video');
+            document.getElementById('page-title').textContent = 'Upload Video';
+            document.getElementById('dashboard-content').style.display = 'none';
+            document.getElementById('upload-video-content').style.display = 'block';
             document.getElementById('settings-content').style.display = 'none';
         }
 
@@ -788,6 +1380,7 @@
             setActiveNav('settings');
             document.getElementById('page-title').textContent = 'Settings';
             document.getElementById('dashboard-content').style.display = 'none';
+            document.getElementById('upload-video-content').style.display = 'none';
             document.getElementById('settings-content').style.display = 'block';
         }
 
@@ -798,8 +1391,10 @@
             
             if (active === 'dashboard') {
                 document.querySelectorAll('.nav-item')[0].classList.add('active');
+            } else if (active === 'upload-video') {
+                document.querySelectorAll('.nav-item')[3].classList.add('active');
             } else if (active === 'settings') {
-                document.querySelectorAll('.nav-item')[2].classList.add('active');
+                document.querySelectorAll('.nav-item')[4].classList.add('active');
             }
         }
 
@@ -823,6 +1418,355 @@
             } catch (error) {
                 console.error('Failed to open amplitude monitor:', error);
                 showError('Failed to open amplitude monitor: ' + error.message);
+            }
+        }
+
+        // Video Upload Functions
+        function selectVideoFile() {
+            console.log('📁 selectVideoFile called');
+            const input = document.getElementById('video-file-input');
+            if (input) {
+                console.log('📁 Clicking file input');
+                input.click();
+            } else {
+                console.error('📁 File input element not found!');
+            }
+        }
+
+        function handleVideoFileSelect(event) {
+            console.log('📁 handleVideoFileSelect called');
+            const file = event.target.files[0];
+            console.log('📁 Selected file:', file ? file.name : 'none');
+            if (file) {
+                console.log('📁 File details:', {
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                });
+                processVideoFile(file);
+            }
+        }
+
+        // Prevent duplicate processing
+        let isProcessingVideo = false;
+        
+        async function processVideoFile(file) {
+            console.log('🎬 processVideoFile called with:', file.name);
+            console.log('🎬 File details:', {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                lastModified: file.lastModified
+            });
+            
+            // Prevent duplicate processing
+            if (isProcessingVideo) {
+                console.log('🎬 Already processing a video, ignoring this request');
+                return;
+            }
+            
+            isProcessingVideo = true;
+            
+            try {
+                // Check file type
+                const supportedTypes = ['video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/mkv', 'video/m4v'];
+                if (!supportedTypes.includes(file.type) && !file.name.match(/\.(mp4|webm|avi|mov|mkv|m4v)$/i)) {
+                    showError('Unsupported video format. Please upload MP4, WebM, AVI, MOV, or MKV files.');
+                    return;
+                }
+            
+            // Check file size (500MB limit)
+            const maxSize = 500 * 1024 * 1024; // 500MB in bytes
+            if (file.size > maxSize) {
+                showError('File size exceeds 500MB limit. Please choose a smaller video file.');
+                return;
+            }
+
+            if (!currentUser) {
+                showWarning('Please sign in to upload and process videos.');
+                return;
+            }
+
+            try {
+                showProcessingUI();
+                
+                // Read the file as array buffer and convert to buffer
+                console.log('📁 Reading file data...');
+                updateProcessingProgress(5, 'Reading file data...');
+                
+                let arrayBuffer, buffer;
+                try {
+                    arrayBuffer = await file.arrayBuffer();
+                    buffer = Array.from(new Uint8Array(arrayBuffer));
+                    
+                    if (buffer.length === 0) {
+                        throw new Error('File appears to be empty');
+                    }
+                    
+                    console.log(`✅ File read successfully: ${Math.round(file.size / 1024)} KB`);
+                    updateProcessingProgress(10, 'File ready for processing...');
+                    
+                } catch (readError) {
+                    console.error('Error reading file:', readError);
+                    throw new Error(`Failed to read video file: ${readError.message}`);
+                }
+                
+                // Process the video with actual file data
+                console.log('🎬 Sending to backend:', {
+                    type: 'file',
+                    filename: file.name,
+                    fileDataLength: buffer.length,
+                    fileSize: file.size
+                });
+                
+                const result = await window.electronAPI.processVideo({
+                    type: 'file',
+                    filename: file.name,
+                    fileData: buffer,
+                    fileSize: file.size
+                });
+                
+                console.log('🎬 Backend response:', result);
+                
+                if (result.success) {
+                    // Update overlay with success state
+                    updateProcessingProgress(100, result.transcriptionAvailable ? 
+                        'Video processed and transcribed successfully!' : 
+                        'Video processed successfully! (Transcription unavailable)');
+                    
+                    // Show success message
+                    showSuccess(result.message || 'Video processed successfully! Opening transcript...');
+                    
+                    // Open the new session after a brief delay to show completion
+                    if (result.sessionId) {
+                        setTimeout(() => {
+                            hideProcessingUI();
+                            window.location.href = `session-detail.html?sessionId=${result.sessionId}`;
+                        }, 2500);
+                    } else {
+                        setTimeout(() => {
+                            hideProcessingUI();
+                        }, 2000);
+                    }
+                } else {
+                    throw new Error(result.error || 'Failed to process video');
+                }
+                
+            } catch (error) {
+                console.error('Error processing video file:', error);
+                showError('Failed to process video: ' + error.message);
+                hideProcessingUI();
+            } finally {
+                isProcessingVideo = false;
+            }
+            
+            } catch (error) {
+                console.error('🎬 File validation error:', error);
+                showError(error.message);
+                isProcessingVideo = false;
+            }
+        }
+
+        async function processVideoUrl() {
+            const urlInput = document.getElementById('video-url-input');
+            const videoUrl = urlInput.value.trim();
+            
+            if (!videoUrl) {
+                showWarning('Please enter a video URL');
+                return;
+            }
+
+            if (!currentUser) {
+                showWarning('Please sign in to process videos from URLs.');
+                return;
+            }
+
+            try {
+                showProcessingUI();
+                
+                const result = await window.electronAPI.processVideo({
+                    type: 'url',
+                    source: videoUrl
+                });
+                
+                if (result.success) {
+                    // Update overlay with success state
+                    updateProcessingProgress(100, result.transcriptionAvailable ? 
+                        'Video processed and transcribed successfully!' : 
+                        'Video processed successfully! (Transcription unavailable)');
+                    
+                    // Show success message
+                    showSuccess(result.message || 'Video processed successfully! Opening transcript...');
+                    
+                    // Clear the input
+                    urlInput.value = '';
+                    
+                    // Open the new session after a brief delay to show completion
+                    if (result.sessionId) {
+                        setTimeout(() => {
+                            hideProcessingUI();
+                            window.location.href = `session-detail.html?sessionId=${result.sessionId}`;
+                        }, 2500);
+                    } else {
+                        setTimeout(() => {
+                            hideProcessingUI();
+                        }, 2000);
+                    }
+                } else {
+                    throw new Error(result.error || 'Failed to process video');
+                }
+                
+            } catch (error) {
+                console.error('Error processing video URL:', error);
+                showError('Failed to process video: ' + error.message);
+                hideProcessingUI();
+            }
+        }
+
+        function showProcessingUI() {
+            // Show the new overlay
+            const processingOverlay = document.getElementById('processing-overlay');
+            processingOverlay.classList.add('active');
+            
+            // Also show the old section for backwards compatibility (in case it's still used somewhere)
+            const processingSection = document.getElementById('processing-section');
+            if (processingSection) {
+                processingSection.style.display = 'block';
+            }
+            
+            // Reset progress
+            updateProcessingProgress(0, 'Preparing video processing...');
+            
+            // Reset step indicators (both old and new)
+            document.querySelectorAll('.processing-step').forEach(step => {
+                step.classList.remove('active', 'completed');
+            });
+            document.querySelectorAll('.processing-step-overlay').forEach(step => {
+                step.classList.remove('active', 'completed');
+            });
+        }
+
+        function hideProcessingUI() {
+            // Hide the overlay
+            const processingOverlay = document.getElementById('processing-overlay');
+            processingOverlay.classList.remove('active');
+            
+            // Also hide the old section
+            const processingSection = document.getElementById('processing-section');
+            if (processingSection) {
+                processingSection.style.display = 'none';
+            }
+        }
+
+        function updateProcessingProgress(percentage, message) {
+            // Update both old and new progress indicators
+            
+            // Old system
+            const progressFill = document.getElementById('processing-progress-fill');
+            const progressText = document.getElementById('processing-progress-text');
+            if (progressFill) {
+                progressFill.style.width = percentage + '%';
+            }
+            if (progressText) {
+                progressText.textContent = message;
+            }
+            
+            // New overlay system
+            const overlayProgressFill = document.getElementById('overlay-progress-fill');
+            const overlayProgressText = document.getElementById('overlay-progress-text');
+            const overlayProgressPercentage = document.getElementById('overlay-progress-percentage');
+            
+            if (overlayProgressFill) {
+                overlayProgressFill.style.width = percentage + '%';
+            }
+            if (overlayProgressText) {
+                overlayProgressText.textContent = message;
+            }
+            if (overlayProgressPercentage) {
+                overlayProgressPercentage.textContent = Math.round(percentage) + '%';
+            }
+        }
+
+        function updateProcessingStep(stepId, status) {
+            // Map step IDs to overlay step IDs
+            const stepMapping = {
+                'step-extract': 'overlay-step-extract',
+                'step-transcribe': 'overlay-step-transcribe', 
+                'step-save': 'overlay-step-save'
+            };
+            
+            // Update old system
+            const step = document.getElementById(stepId);
+            if (step) {
+                step.classList.remove('active', 'completed');
+                step.classList.add(status);
+            }
+            
+            // Update new overlay system
+            const overlayStepId = stepMapping[stepId];
+            if (overlayStepId) {
+                const overlayStep = document.getElementById(overlayStepId);
+                if (overlayStep) {
+                    overlayStep.classList.remove('active', 'completed');
+                    overlayStep.classList.add(status);
+                }
+            }
+        }
+
+        // Drag and drop functionality
+        function initializeDragAndDrop() {
+            const dropzone = document.getElementById('upload-dropzone');
+            
+            if (!dropzone) return;
+            
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+            
+            dropzone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+            });
+            
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    const supportedTypes = ['video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/mkv', 'video/m4v'];
+                    if (supportedTypes.includes(file.type) || file.name.match(/\.(mp4|webm|avi|mov|mkv|m4v)$/i)) {
+                        processVideoFile(file);
+                    } else {
+                        showWarning('Please drop a supported video file (MP4, WebM, AVI, MOV, MKV)');
+                    }
+                }
+            });
+            
+            dropzone.addEventListener('click', selectVideoFile);
+        }
+
+        // Initialize drag and drop when upload video content is shown
+        function initializeUploadVideo() {
+            initializeDragAndDrop();
+        }
+
+        // Listen for video processing updates
+        function initializeVideoProcessingListener() {
+            if (window.electronAPI && window.electronAPI.onVideoProcessingUpdate) {
+                window.electronAPI.onVideoProcessingUpdate((updateData) => {
+                    const { progress, message, stepId, stepStatus } = updateData;
+                    
+                    // Update progress bar and text
+                    updateProcessingProgress(progress, message);
+                    
+                    // Update step indicators
+                    if (stepId && stepStatus) {
+                        updateProcessingStep(stepId, stepStatus);
+                    }
+                });
             }
         }
 
@@ -1110,6 +2054,8 @@
         // Initialize the app
         window.addEventListener('DOMContentLoaded', async () => {
             initializeTheme();
+            initializeDragAndDrop();
+            initializeVideoProcessingListener();
             
             try {
                 const user = await window.electronAPI.getCurrentUser();
@@ -1140,7 +2086,8 @@
         // Cleanup on window unload
         window.addEventListener('beforeunload', () => {
             if (window.electronAPI) {
-            window.electronAPI.removeAuthStateListener();
+                window.electronAPI.removeAuthStateListener();
+                window.electronAPI.removeVideoProcessingListener && window.electronAPI.removeVideoProcessingListener();
             }
         });
     </script>

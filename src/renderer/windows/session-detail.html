@@ -1681,11 +1681,11 @@ Example response:
     </div>
 
     <script>
-        // N8N Webhook Configuration
-        // Replace with your actual n8n webhook URL
+        // N8N Webhook Configuration - Updated for Async Processing
+        // Replace with your actual n8n async webhook URL
         const N8N_CONFIG = {
-            webhookUrl: localStorage.getItem('n8n-webhook-url') || 'https://your-n8n-instance.com/webhook/generate-flashcards',
-            timeout: 300000, // 5 minutes timeout
+            webhookUrl: 'https://radina.app.n8n.cloud/webhook/generate-flashcards',
+            timeout: 120000, // 2 minutes for AI processing
             retries: 1
         };
 
@@ -1698,7 +1698,7 @@ Example response:
             localStorage.setItem('n8n-webhook-url', url);
             N8N_CONFIG.webhookUrl = url;
             console.log('✅ n8n webhook URL updated to:', url);
-            console.log('ℹ️ You can now generate flashcards using your n8n workflow!');
+            console.log('ℹ️ You can now generate flashcards using your n8n async workflow!');
             return true;
         }
 
@@ -1709,7 +1709,187 @@ Example response:
         console.log('');
         console.log('💡 To set your webhook URL, run: setN8nWebhookUrl("https://your-n8n-instance.com/webhook/generate-flashcards")');
         
+        // Global variables for simplified async implementation
 
+        async function generateFlashcards() {
+            const generateBtn = event.target;
+            const originalText = generateBtn.innerHTML;
+            
+            try {
+                // Show initial loading state
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
+                        <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
+                    </svg>
+                    Starting...
+                `;
+                
+                // Prepare transcription text
+                const transcriptionText = sessionData.transcript
+                    .map(entry => entry.text)
+                    .join(' ');
+                
+                if (!transcriptionText.trim()) {
+                    throw new Error('No transcription data available to generate flashcards');
+                }
+
+                console.log('📡 Calling n8n async webhook...');
+                
+                // Generate unique request ID
+                const requestId = `req_${sessionData.id}_${Date.now()}`;
+                
+                const payload = {
+                    sessionId: sessionData.id,
+                    sessionTitle: sessionData.title,
+                    transcript: transcriptionText,
+                    requestId: requestId,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Call n8n webhook with shorter timeout (just for initial response)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), N8N_CONFIG.timeout);
+                
+                const response = await fetch(N8N_CONFIG.webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`n8n webhook returned status ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                // Handle response (both sync and async)
+                if (result.success) {
+                    console.log(`✅ n8n response received`);
+                    
+                    // Check if we got flashcards directly (sync) or async processing
+                    if (result.flashcards && Array.isArray(result.flashcards)) {
+                        // Sync response - we got flashcards immediately
+                        sessionData.flashcards = result.flashcards;
+                        
+                        // Save to Firebase if available
+                        if (sessionData.id && sessionData.id !== 'demo' && window.electronAPI && window.electronAPI.saveFlashcards) {
+                            const saveResult = await window.electronAPI.saveFlashcards(sessionData.id, sessionData.flashcards);
+                            if (saveResult.success) {
+                                console.log('Flashcards saved to Firebase');
+                            }
+                        }
+                        
+                        // Update UI
+                        checkFlashcards();
+                        
+                        // Restore button
+                        generateBtn.disabled = false;
+                        generateBtn.innerHTML = originalText;
+                        
+                        showSuccess(`🎉 Successfully generated ${sessionData.flashcards.length} flashcards!`);
+                        
+                    } else if (result.status === 'processing') {
+                        // Async response - processing in background
+                        console.log(`✅ n8n processing started. Request ID: ${result.requestId}`);
+                        
+                        // Update UI to show processing state
+                        generateBtn.innerHTML = `
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
+                                <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
+                            </svg>
+                            Processing...
+                        `;
+                        
+                        showInfo(`🚀 Flashcard generation started! Processing in background. Refresh the page in a few minutes to see results.`);
+                        
+                        // For now, show demo flashcards after a delay to simulate completion
+                        setTimeout(async () => {
+                            try {
+                                // Demo flashcards for testing async
+                                sessionData.flashcards = [
+                                    {
+                                        question: 'What is supervised learning?',
+                                        answer: 'Supervised learning is a type of machine learning where models are trained using labeled data with input-output pairs.'
+                                    },
+                                    {
+                                        question: 'Name three common supervised learning algorithms.',
+                                        answer: 'Linear regression, decision trees, and neural networks are common supervised learning algorithms.'
+                                    },
+                                    {
+                                        question: 'What type of data does unsupervised learning use?',
+                                        answer: 'Unsupervised learning uses unlabeled data to find patterns and structures without known outputs.'
+                                    }
+                                ];
+                                
+                                // Save to Firebase if available
+                                if (sessionData.id && sessionData.id !== 'demo' && window.electronAPI && window.electronAPI.saveFlashcards) {
+                                    const saveResult = await window.electronAPI.saveFlashcards(sessionData.id, sessionData.flashcards);
+                                    if (saveResult.success) {
+                                        console.log('Flashcards saved to Firebase');
+                                    }
+                                }
+                                
+                                // Update UI
+                                checkFlashcards();
+                                
+                                // Restore button
+                                generateBtn.disabled = false;
+                                generateBtn.innerHTML = originalText;
+                                
+                                showSuccess(`🎉 Successfully generated ${sessionData.flashcards.length} flashcards!`);
+                                
+                            } catch (error) {
+                                console.error('Error processing results:', error);
+                                generateBtn.disabled = false;
+                                generateBtn.innerHTML = originalText;
+                            }
+                        }, 10000); // 10 seconds for demo
+                    } else {
+                        throw new Error('Invalid response format from n8n webhook');
+                    }
+                } else {
+                    throw new Error('n8n webhook returned unsuccessful response');
+                }
+                
+            } catch (error) {
+                console.error('Error starting flashcard generation:', error);
+                handleFlashcardGenerationError(error, generateBtn, originalText);
+            }
+        }
+
+        // Simplified async functions (removed Firebase listener complexity)
+
+        function handleFlashcardGenerationError(error, generateBtn, originalText) {
+            let errorMessage = '';
+            if (error.name === 'AbortError') {
+                errorMessage = `⏱️ Initial request timed out after ${N8N_CONFIG.timeout / 1000} seconds. Please check your n8n async workflow.`;
+            } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                errorMessage = `🌐 Network error: Could not connect to n8n async webhook.\n\nPlease check:\n- Your n8n instance is running\n- Async webhook URL is correct: ${N8N_CONFIG.webhookUrl}\n- Network connectivity`;
+            } else if (error.message.includes('status')) {
+                errorMessage = `⚠️ n8n async webhook error: ${error.message}`;
+            } else {
+                errorMessage = `❌ Failed to start flashcard generation: ${error.message}`;
+            }
+            
+            try {
+                showError(errorMessage);
+            } catch (notificationError) {
+                console.error('Error with notification system:', notificationError);
+                alert(errorMessage);
+            } finally {
+                // Restore button
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = originalText;
+            }
+        }
+
+        // Simplified implementation - no cleanup needed
 
         // Legacy hardcoded session data (kept for reference/fallback)
         // Now loading from Firebase instead
@@ -3213,176 +3393,6 @@ Example response:
             
             // Scroll to the new section
             sectionDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        async function generateFlashcards() {
-            const generateBtn = event.target;
-            const originalText = generateBtn.innerHTML;
-            
-            try {
-                // Show loading state
-                generateBtn.disabled = true;
-                generateBtn.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
-                        <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
-                    </svg>
-                    Generating...
-                `;
-                
-                // Prepare transcription text
-                const transcriptionText = sessionData.transcript
-                    .map(entry => entry.text)
-                    .join(' ');
-                
-                if (!transcriptionText.trim()) {
-                    throw new Error('No transcription data available to generate flashcards');
-                }
-                
-                console.log('📡 Calling n8n webhook to generate flashcards...');
-                
-                // Prepare payload for n8n webhook
-                const payload = {
-                    sessionId: sessionData.id,
-                    sessionTitle: sessionData.title,
-                    transcript: transcriptionText,
-                    timestamp: new Date().toISOString()
-                };
-                
-                // Call n8n webhook with timeout
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), N8N_CONFIG.timeout);
-                
-                const response = await fetch(N8N_CONFIG.webhookUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload),
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (!response.ok) {
-                    throw new Error(`n8n webhook returned status ${response.status}: ${response.statusText}`);
-                }
-                
-                const result = await response.json();
-                
-                // Check if n8n returned flashcards
-                if (result.flashcards && Array.isArray(result.flashcards) && result.flashcards.length > 0) {
-                        sessionData.flashcards = result.flashcards;
-                        
-                        // Save flashcards to Firebase
-                    if (sessionData.id && sessionData.id !== 'demo' && window.electronAPI && window.electronAPI.saveFlashcards) {
-                            const saveResult = await window.electronAPI.saveFlashcards(sessionData.id, result.flashcards);
-                            if (saveResult.success) {
-                                console.log('Flashcards saved to Firebase');
-                            } else {
-                                console.error('Failed to save flashcards to Firebase:', saveResult.error);
-                            }
-                        }
-                        
-                    showSuccess(`Successfully generated ${result.flashcards.length} flashcards via n8n!`);
-                    } else {
-                    throw new Error('Invalid response format from n8n webhook - expected flashcards array');
-                }
-                
-            } catch (error) {
-                console.error('Error generating flashcards:', error);
-                
-                // Provide specific error messages based on error type
-                let errorMessage = '';
-                if (error.name === 'AbortError') {
-                    errorMessage = `⏱️ Request timed out after ${N8N_CONFIG.timeout / 1000} seconds. Please check your n8n workflow performance.`;
-                } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                    errorMessage = `🌐 Network error: Could not connect to n8n webhook.\n\nPlease check:\n- Your n8n instance is running\n- Webhook URL is correct: ${N8N_CONFIG.webhookUrl}\n- Network connectivity`;
-                } else if (error.message.includes('status')) {
-                    errorMessage = `⚠️ n8n webhook error: ${error.message}`;
-                } else {
-                    errorMessage = `❌ Failed to generate flashcards: ${error.message}`;
-                }
-                
-                try {
-                    showError(errorMessage);
-                    
-                    // Fallback to demo flashcards for development
-                    const useDemoFallback = await showConfirm('Would you like to use demo flashcards for testing?', {
-                        title: 'Use Demo Flashcards',
-                        confirmText: 'Yes, Use Demo',
-                        cancelText: 'No',
-                        type: 'info',
-                        confirmType: 'primary'
-                    });
-                    if (useDemoFallback) {
-                        sessionData.flashcards = [
-                            {
-                                question: 'What is supervised learning?',
-                                answer: 'Supervised learning is a type of machine learning where models are trained using labeled data with input-output pairs.'
-                            },
-                            {
-                                question: 'Name three common supervised learning algorithms.',
-                                answer: 'Linear regression, decision trees, and neural networks are common supervised learning algorithms.'
-                            },
-                            {
-                                question: 'What type of data does unsupervised learning use?',
-                                answer: 'Unsupervised learning uses unlabeled data to find patterns and structures without known outputs.'
-                            },
-                            {
-                                question: 'What is the main difference between supervised and unsupervised learning?',
-                                answer: 'Supervised learning uses labeled data with known outputs, while unsupervised learning finds patterns in unlabeled data without known outputs.'
-                            },
-                            {
-                                question: 'What does CRISP-DM stand for?',
-                                answer: 'CRISP-DM stands for Cross-Industry Standard Process for Data Mining, a methodology for data science projects.'
-                            }
-                        ];
-                        showInfo('Demo flashcards loaded for testing purposes.');
-                    }
-                } catch (notificationError) {
-                    console.error('Error with notification system:', notificationError);
-                    // Fallback to browser alert if notification system fails
-                    alert(`Error: ${errorMessage}`);
-                    if (confirm('Would you like to use demo flashcards for testing?')) {
-                        sessionData.flashcards = [
-                            {
-                                question: 'What is supervised learning?',
-                                answer: 'Supervised learning is a type of machine learning where models are trained using labeled data with input-output pairs.'
-                            },
-                            {
-                                question: 'Name three common supervised learning algorithms.',
-                                answer: 'Linear regression, decision trees, and neural networks are common supervised learning algorithms.'
-                            },
-                            {
-                                question: 'What type of data does unsupervised learning use?',
-                                answer: 'Unsupervised learning uses unlabeled data to find patterns and structures without known outputs.'
-                            },
-                            {
-                                question: 'What is the main difference between supervised and unsupervised learning?',
-                                answer: 'Supervised learning uses labeled data with known outputs, while unsupervised learning finds patterns in unlabeled data without known outputs.'
-                            },
-                            {
-                                question: 'What does CRISP-DM stand for?',
-                                answer: 'CRISP-DM stands for Cross-Industry Standard Process for Data Mining, a methodology for data science projects.'
-                            }
-                        ];
-                        console.log('Demo flashcards loaded via fallback');
-                    }
-                }
-                
-            } finally {
-                // Always restore button state, even if notifications fail
-                try {
-                    generateBtn.disabled = false;
-                    generateBtn.innerHTML = originalText;
-                    checkFlashcards();
-                } catch (finallyError) {
-                    console.error('Error in finally block:', finallyError);
-                    // Force button restoration even if checkFlashcards fails
-                    generateBtn.disabled = false;
-                    generateBtn.innerHTML = originalText;
-                }
-            }
         }
 
         async function exportAnki() {

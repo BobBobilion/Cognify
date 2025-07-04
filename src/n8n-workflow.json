@@ -13,8 +13,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        -1900,
-        -60
+        -1880,
+        -260
       ],
       "webhookId": "cognify-flashcards"
     },
@@ -49,8 +49,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 1,
       "position": [
-        -1700,
-        -60
+        -1660,
+        -260
       ]
     },
     {
@@ -72,8 +72,8 @@
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
       "position": [
-        -1500,
-        -60
+        -1440,
+        -260
       ],
       "credentials": {
         "openAiApi": {
@@ -91,8 +91,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        -1300,
-        -60
+        -1220,
+        -260
       ]
     },
     {
@@ -114,8 +114,8 @@
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
       "position": [
-        -1100,
-        -60
+        -1000,
+        -260
       ],
       "credentials": {
         "openAiApi": {
@@ -133,8 +133,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        -980,
-        80
+        -780,
+        -260
       ]
     },
     {
@@ -146,8 +146,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        -820,
-        0
+        -580,
+        -480
       ]
     },
     {
@@ -169,8 +169,8 @@
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
       "position": [
-        -580,
-        100
+        -380,
+        -480
       ],
       "credentials": {
         "openAiApi": {
@@ -188,8 +188,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        -440,
-        0
+        -160,
+        -480
       ]
     },
     {
@@ -208,8 +208,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        -260,
-        0
+        60,
+        -480
       ]
     },
     {
@@ -231,8 +231,8 @@
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
       "position": [
-        -300,
-        -220
+        -1000,
+        -480
       ],
       "credentials": {
         "openAiApi": {
@@ -250,8 +250,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        -100,
-        -220
+        -780,
+        -480
       ]
     },
     {
@@ -263,8 +263,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        -60,
-        20
+        320,
+        -460
       ]
     },
     {
@@ -299,8 +299,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        160,
-        20
+        540,
+        -460
       ]
     }
   ],
@@ -457,11 +457,11 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "1ee7524f-3542-4f45-a1f4-021b614b9fc8",
+  "versionId": "3f436f9b-0d9a-4c6d-8851-bc3994f69c24",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "304854bba464753094d47904a80cc1b97958d7982642a8841539c1e44d30ce2d"
@@ -491,6 +491,18 @@
       "updatedAt": "2025-07-03T01:17:31.760Z",
       "id": "yaFQDsDuwGLPusD7",
       "name": "adaptive"
+    },
+    {
+      "name": "async",
+      "id": "2uQJUaDBrutdHdpg",
+      "createdAt": "2025-07-03T23:53:53.981Z",
+      "updatedAt": "2025-07-03T23:53:53.981Z"
+    },
+    {
+      "name": "flashcards",
+      "id": "cx7290MWQtYzv3Rh",
+      "createdAt": "2025-07-03T23:53:53.958Z",
+      "updatedAt": "2025-07-03T23:53:53.958Z"
     }
   ]
 }

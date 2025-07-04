@@ -9,6 +9,7 @@ const OpenAI = require('openai');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const { spawn } = require('child_process');
+const ffmpeg = require('fluent-ffmpeg');
 const FlashcardGenerator = require('../utils/flashcard-generator');
 
 // Initialize OpenAI
@@ -458,17 +459,71 @@ const processAudioChunk = async (audioBuffer) => {
 const transcribeAudio = async (audioFilePath) => {
   try {
     if (!process.env.OPENAI_API_KEY) {
-      console.warn('OpenAI API key not configured');
-      return { text: 'OpenAI API key not configured', confidence: 0 };
+      console.warn('⚠️ OpenAI API key not configured - using fallback transcription');
+      return { 
+        text: 'Transcription not available - OpenAI API key not configured. Please set up your OpenAI API key in the environment variables to enable automatic transcription of videos and audio.', 
+        confidence: 0 
+      };
     }
     
-    const transcription = await openai.audio.transcriptions.create({
-      file: fs.createReadStream(audioFilePath),
-      model: 'whisper-1',
-      language: 'en',
-      response_format: 'json',
-      temperature: 0.0,
+    // Validate audio file before sending to OpenAI
+    if (!fs.existsSync(audioFilePath)) {
+      throw new Error(`Audio file does not exist: ${audioFilePath}`);
+    }
+    
+    const stats = fs.statSync(audioFilePath);
+    console.log(`🎙️ Preparing audio for transcription:`);
+    console.log(`   📁 File: ${audioFilePath}`);
+    console.log(`   📊 Size: ${Math.round(stats.size / 1024)} KB`);
+    
+    if (stats.size < 1000) {
+      throw new Error('Audio file is too small (likely empty or corrupted)');
+    }
+    
+    if (stats.size > 25 * 1024 * 1024) { // 25MB limit for OpenAI
+      throw new Error('Audio file is too large (exceeds OpenAI 25MB limit)');
+    }
+    
+    console.log('🤖 Transcribing audio with OpenAI Whisper...');
+    
+    // Create file stream and add error handling
+    const fileStream = fs.createReadStream(audioFilePath);
+    
+    fileStream.on('error', (streamError) => {
+      console.error('❌ File stream error:', streamError);
     });
+    
+    const transcription = await openai.audio.transcriptions.create({
+      file: fileStream,
+      model: 'whisper-1',
+      language: 'en', // You can remove this to auto-detect language
+      response_format: 'json',
+      temperature: 0.0, // More deterministic results
+    });
+    
+    console.log(`✅ Transcription completed successfully:`);
+    console.log(`   📝 Length: ${transcription.text.length} characters`);
+    console.log(`   🔍 Preview: "${transcription.text.substring(0, 150)}..."`);
+    
+    // Check for common hallucination patterns
+    const text = transcription.text.trim();
+    if (!text) {
+      throw new Error('OpenAI returned empty transcription');
+    }
+    
+    // Check for signs of audio quality issues (common hallucinations)
+    const suspiciousPatterns = [
+      /^(Thank you\.|Thanks for watching|Bye\.|you)/i,
+      /^(Music|♪|♫)/,
+      /^(Silence|No audio|Quiet)/i,
+      /^\s*\.+\s*$/,
+      /^[^a-zA-Z]+$/
+    ];
+    
+    const isSuspicious = suspiciousPatterns.some(pattern => pattern.test(text));
+    if (isSuspicious && text.length < 50) {
+      console.warn('⚠️ Potential audio quality issue detected - transcription may be unreliable');
+    }
     
     return {
       text: transcription.text,
@@ -476,9 +531,443 @@ const transcribeAudio = async (audioFilePath) => {
     };
     
   } catch (error) {
-    console.error('Whisper transcription error:', error);
-    return { text: '', confidence: 0 };
+    console.error('❌ Whisper transcription error:', error);
+    console.error('   Error details:', error.message);
+    console.error('   Audio file:', audioFilePath);
+    
+    // Provide helpful fallback message with specific error
+    let errorMessage = error.message;
+    if (error.message.includes('Invalid file format')) {
+      errorMessage = 'Audio file format is not supported by OpenAI Whisper';
+    } else if (error.message.includes('File too large')) {
+      errorMessage = 'Audio file exceeds OpenAI size limits';
+    } else if (error.message.includes('rate limit')) {
+      errorMessage = 'OpenAI API rate limit exceeded - please try again later';
+    }
+    
+    const fallbackText = `Transcription failed: ${errorMessage}. The video was processed successfully, but automatic transcription is not available. You can manually add transcript content.`;
+    
+    return { 
+      text: fallbackText, 
+      confidence: 0 
+    };
   }
+};
+
+// Video processing function
+const processVideo = async (videoData) => {
+  try {
+    console.log('🎬 Starting video processing...', videoData);
+    
+    let videoPath = null;
+    let audioPath = null;
+    let sessionId = null;
+    
+    // Create session ID
+    sessionId = uuidv4();
+    
+    // Ensure temp directory exists
+    const tempDir = path.join(__dirname, '../../temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    
+    try {
+      // Step 1: Handle video input (file or URL)
+      if (videoData.type === 'url') {
+        console.log('📥 Downloading video from URL...');
+        // Send progress update
+        sendVideoProcessingUpdate(sessionId, 10, 'Downloading video...', 'step-extract', 'active');
+        
+        videoPath = await downloadVideo(videoData.source, tempDir);
+        
+        sendVideoProcessingUpdate(sessionId, 30, 'Video downloaded successfully', 'step-extract', 'completed');
+      } else if (videoData.type === 'file') {
+        console.log('📁 Processing uploaded video file...');
+        console.log(`📊 File info: ${videoData.filename} (${Math.round((videoData.fileSize || 0) / 1024)} KB)`);
+        
+        sendVideoProcessingUpdate(sessionId, 15, 'Saving uploaded file...', 'step-extract', 'active');
+        
+        // Validate file data
+        if (!videoData.fileData || !Array.isArray(videoData.fileData)) {
+          throw new Error('Invalid file data received - fileData is missing or not an array');
+        }
+        
+        if (videoData.fileData.length === 0) {
+          throw new Error('File data is empty');
+        }
+        
+        // Convert array back to Buffer and save to temp directory
+        console.log(`📦 Converting ${videoData.fileData.length} bytes to buffer...`);
+        const fileBuffer = Buffer.from(videoData.fileData);
+        
+        // Create a safe filename
+        const sanitizedFilename = videoData.filename.replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, '_');
+        videoPath = path.join(tempDir, `uploaded_${Date.now()}_${sanitizedFilename}`);
+        
+        console.log(`💾 Saving file to: ${videoPath}`);
+        console.log(`📁 Temp directory: ${tempDir}`);
+        console.log(`📁 Directory exists: ${fs.existsSync(tempDir)}`);
+        
+        try {
+          fs.writeFileSync(videoPath, fileBuffer);
+          console.log(`✅ File written successfully`);
+        } catch (writeError) {
+          console.error(`❌ Failed to write file:`, writeError);
+          throw new Error(`Failed to save uploaded file: ${writeError.message}`);
+        }
+        
+        // Verify file was saved correctly
+        if (!fs.existsSync(videoPath)) {
+          throw new Error('Failed to save uploaded file');
+        }
+        
+        const savedFileStats = fs.statSync(videoPath);
+        console.log(`✅ File saved successfully: ${Math.round(savedFileStats.size / 1024)} KB`);
+        
+        if (savedFileStats.size !== videoData.fileSize) {
+          console.warn(`⚠️ File size mismatch: expected ${videoData.fileSize}, got ${savedFileStats.size}`);
+        }
+        
+        sendVideoProcessingUpdate(sessionId, 40, 'Video file ready for processing', 'step-extract', 'completed');
+      }
+      
+      // Step 2: Extract audio from video
+      console.log('🎵 Extracting audio from video...');
+      sendVideoProcessingUpdate(sessionId, 50, 'Extracting audio...', 'step-transcribe', 'active');
+      
+      audioPath = await extractAudioFromVideo(videoPath, tempDir);
+      
+      sendVideoProcessingUpdate(sessionId, 70, 'Audio extracted successfully', 'step-transcribe', 'completed');
+      
+      // Step 3: Transcribe audio for accurate results
+      console.log('🎙️ Transcribing audio...');
+      sendVideoProcessingUpdate(sessionId, 80, 'Transcribing audio...', 'step-save', 'active');
+      
+      let transcriptionText = '';
+      let transcriptionSuccessful = false;
+      
+      try {
+        transcriptionText = await transcribeVideoAudio(audioPath);
+        transcriptionSuccessful = !transcriptionText.includes('OpenAI API key not configured') && 
+                                 !transcriptionText.includes('transcription failed');
+        
+        if (transcriptionSuccessful) {
+          sendVideoProcessingUpdate(sessionId, 90, 'Transcription completed successfully', 'step-save', 'completed');
+          console.log('✅ Transcription completed successfully');
+        } else {
+          sendVideoProcessingUpdate(sessionId, 90, 'Video processed (transcription unavailable)', 'step-save', 'completed');
+          console.log('⚠️ Video processed but transcription not available');
+        }
+      } catch (error) {
+        console.error('❌ Transcription failed:', error);
+        transcriptionText = 'Audio extracted from video, but transcription failed. You can manually add transcript content.';
+        sendVideoProcessingUpdate(sessionId, 90, 'Video processed (transcription failed)', 'step-save', 'completed');
+      }
+      
+      // Step 4: Create and save session
+      console.log('💾 Creating session document...');
+      sendVideoProcessingUpdate(sessionId, 95, 'Creating session document...');
+      
+      const sessionData = {
+        title: videoData.filename ? `Video: ${videoData.filename}` : `Video from ${videoData.type === 'url' ? 'URL' : 'File'}`,
+        type: 'video',
+        date: new Date().toISOString().split('T')[0],
+        duration: '00:00:00', // We could calculate this from the video
+        description: videoData.type === 'url' ? `Processed from: ${videoData.source}` : 'Processed from uploaded video file',
+        transcript: [{
+          timestamp: new Date().toISOString(),
+          text: transcriptionText,
+          confidence: transcriptionSuccessful ? 1.0 : 0.0
+        }],
+        summary: '',
+        keyPoints: [],
+        actionItems: [],
+        flashcards: [],
+        notes: [],
+        screenshots: [],
+        chatHistory: []
+      };
+      
+      // Save session to Firebase
+      if (currentUser) {
+        const result = await firebaseDB.saveSession(currentUser.uid, sessionData);
+        
+        if (result.success) {
+          sessionId = result.sessionId;
+          console.log('✅ Session saved successfully with ID:', sessionId);
+        } else {
+          console.error('Failed to save session:', result.error);
+        }
+      }
+      
+      sendVideoProcessingUpdate(sessionId, 100, 'Processing complete!');
+      
+      // Cleanup temporary files (including uploaded file)
+      setTimeout(() => {
+        cleanupTempFiles([videoPath, audioPath]);
+      }, 5000);
+      
+      return {
+        success: true,
+        sessionId: sessionId,
+        transcriptionText: transcriptionText,
+        message: transcriptionSuccessful ? 
+          'Video processed and transcribed successfully!' : 
+          'Video processed successfully! (Transcription unavailable - check OpenAI configuration)',
+        transcriptionAvailable: transcriptionSuccessful
+      };
+      
+    } catch (error) {
+      console.error('Error during video processing:', error);
+      
+      // Cleanup on error
+      cleanupTempFiles([videoPath, audioPath]);
+      
+      throw error;
+    }
+    
+  } catch (error) {
+    console.error('Video processing failed:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// Helper function to download video from URL
+const downloadVideo = async (url, outputDir) => {
+  return new Promise((resolve, reject) => {
+    const outputPath = path.join(outputDir, `video_${Date.now()}.%(ext)s`);
+    
+    // Use local yt-dlp executable first, fallback to system-wide installation
+    const localYtDlpPath = path.join(__dirname, '../../temp/tools/yt-dlp.exe');
+    let command = fs.existsSync(localYtDlpPath) ? localYtDlpPath : 'yt-dlp';
+    let args = [
+      '--format', 'best[ext=mp4]/best', // Prefer mp4, fallback to best available
+      '--output', outputPath,
+      '--no-playlist', // Only download single video
+      '--restrict-filenames', // Use safe filenames
+      url
+    ];
+    
+    console.log(`📥 Attempting to download video with ${command}...`);
+    
+    const downloader = spawn(command, args);
+    let downloadedPath = null;
+    
+    downloader.stdout.on('data', (data) => {
+      const output = data.toString();
+      console.log('Download output:', output);
+      
+      // Try to extract the actual filename from output
+      const match = output.match(/\[download\] Destination: (.+)/);
+      if (match) {
+        downloadedPath = match[1];
+      }
+    });
+    
+    downloader.stderr.on('data', (data) => {
+      console.log('Download stderr:', data.toString());
+    });
+    
+    downloader.on('close', (code) => {
+      if (code === 0) {
+        // If we couldn't extract the path from output, try to find the downloaded file
+        if (!downloadedPath) {
+          const files = fs.readdirSync(outputDir).filter(file => 
+            file.startsWith('video_') && (file.endsWith('.mp4') || file.endsWith('.webm') || file.endsWith('.mkv'))
+          );
+          if (files.length > 0) {
+            downloadedPath = path.join(outputDir, files[files.length - 1]); // Get the most recent
+          }
+        }
+        
+        if (downloadedPath && fs.existsSync(downloadedPath)) {
+          console.log('✅ Video downloaded successfully:', downloadedPath);
+          resolve(downloadedPath);
+        } else {
+          reject(new Error('Video downloaded but file not found'));
+        }
+      } else {
+        // If yt-dlp failed, try youtube-dl as fallback
+        if (command === localYtDlpPath || command === 'yt-dlp') {
+          console.log('⚠️ yt-dlp failed, trying youtube-dl...');
+          command = 'youtube-dl';
+          
+          const fallbackDownloader = spawn(command, args);
+          
+          fallbackDownloader.on('close', (fallbackCode) => {
+            if (fallbackCode === 0) {
+              // Find downloaded file
+              const files = fs.readdirSync(outputDir).filter(file => 
+                file.startsWith('video_') && (file.endsWith('.mp4') || file.endsWith('.webm') || file.endsWith('.mkv'))
+              );
+              if (files.length > 0) {
+                const finalPath = path.join(outputDir, files[files.length - 1]);
+                console.log('✅ Video downloaded with youtube-dl:', finalPath);
+                resolve(finalPath);
+              } else {
+                reject(new Error('Video download failed with both yt-dlp and youtube-dl'));
+              }
+            } else {
+              reject(new Error(`Both yt-dlp and youtube-dl failed. Make sure one of them is installed.`));
+            }
+          });
+          
+          fallbackDownloader.on('error', (error) => {
+            reject(new Error(`Download tools not available: ${error.message}`));
+          });
+        } else {
+          reject(new Error(`${command} failed with code ${code}`));
+        }
+      }
+    });
+    
+    downloader.on('error', (error) => {
+      if (command === localYtDlpPath || command === 'yt-dlp') {
+        // Try youtube-dl as fallback
+        console.log('⚠️ yt-dlp not found, trying youtube-dl...');
+        const fallbackDownloader = spawn('youtube-dl', args);
+        
+        fallbackDownloader.on('close', (fallbackCode) => {
+          if (fallbackCode === 0) {
+            const files = fs.readdirSync(outputDir).filter(file => 
+              file.startsWith('video_') && (file.endsWith('.mp4') || file.endsWith('.webm') || file.endsWith('.mkv'))
+            );
+            if (files.length > 0) {
+              const finalPath = path.join(outputDir, files[files.length - 1]);
+              console.log('✅ Video downloaded with youtube-dl:', finalPath);
+              resolve(finalPath);
+            } else {
+              reject(new Error('Video download failed'));
+            }
+          } else {
+            reject(new Error(`Download failed. Please install yt-dlp or youtube-dl.`));
+          }
+        });
+        
+        fallbackDownloader.on('error', (fallbackError) => {
+          reject(new Error(`Download tools not available. Please install yt-dlp or youtube-dl: ${fallbackError.message}`));
+        });
+      } else {
+        reject(new Error(`Download error: ${error.message}`));
+      }
+    });
+  });
+};
+
+// Helper function to extract audio from video using fluent-ffmpeg
+const extractAudioFromVideo = async (videoPath, outputDir) => {
+  return new Promise((resolve, reject) => {
+    const audioPath = path.join(outputDir, `audio_${Date.now()}.wav`);
+    
+    console.log('🎵 Extracting audio from video with optimal settings...');
+    console.log(`📹 Video path: ${videoPath}`);
+    console.log(`🎧 Audio output: ${audioPath}`);
+    
+    ffmpeg(videoPath)
+      .noVideo()
+      .audioCodec('pcm_s16le')
+      .audioFrequency(22050) // Higher sample rate for better quality (22.05kHz)
+      .audioChannels(1) // Mono audio
+      .audioBitrate('128k') // Ensure good quality
+      .output(audioPath)
+      .on('start', (commandLine) => {
+        console.log('🔧 FFmpeg command:', commandLine);
+      })
+      .on('end', () => {
+        // Check if the audio file was created and has content
+        if (fs.existsSync(audioPath)) {
+          const stats = fs.statSync(audioPath);
+          console.log(`✅ Audio extraction completed. File size: ${Math.round(stats.size / 1024)} KB`);
+          
+          if (stats.size < 1000) { // Less than 1KB indicates likely empty/corrupt file
+            console.warn('⚠️ Audio file is very small, might be empty or corrupted');
+          }
+          
+          resolve(audioPath);
+        } else {
+          reject(new Error('Audio file was not created'));
+        }
+      })
+      .on('error', (error) => {
+        console.error('❌ Audio extraction failed:', error);
+        reject(new Error(`Audio extraction failed: ${error.message}`));
+      })
+      .on('progress', (progress) => {
+        if (progress.percent) {
+          console.log(`🎵 Audio extraction progress: ${Math.round(progress.percent)}%`);
+        }
+      })
+      .run();
+  });
+};
+
+// Helper function to transcribe audio (normal speed for better accuracy)
+const transcribeVideoAudio = async (audioPath) => {
+  try {
+    console.log('🎙️ Transcribing audio at normal speed for optimal accuracy...');
+    
+    // Check audio file before transcription
+    if (!fs.existsSync(audioPath)) {
+      throw new Error('Audio file does not exist');
+    }
+    
+    const stats = fs.statSync(audioPath);
+    console.log(`📊 Audio file info: ${Math.round(stats.size / 1024)} KB`);
+    
+    if (stats.size < 1000) {
+      throw new Error('Audio file is too small (likely empty or corrupted)');
+    }
+    
+    // Transcribe the audio at normal speed
+    const transcription = await transcribeAudio(audioPath);
+    
+    if (!transcription.text || transcription.text.trim().length === 0) {
+      throw new Error('Transcription returned empty text');
+    }
+    
+    console.log(`✅ Transcription completed successfully (${transcription.text.length} characters)`);
+    console.log(`🎯 Transcription preview: "${transcription.text.substring(0, 100)}..."`);
+    
+    return transcription.text;
+    
+  } catch (error) {
+    console.error('❌ Error transcribing audio:', error);
+    
+    // Return a more descriptive error message
+    const errorDetails = error.message || 'Unknown error';
+    return `Audio processing completed, but transcription failed: ${errorDetails}. The video was successfully processed but automatic transcription is not available. You can manually add transcript content.`;
+  }
+};
+
+// Helper function to send processing updates to renderer
+const sendVideoProcessingUpdate = (sessionId, progress, message, stepId = null, stepStatus = null) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('video-processing-update', {
+      sessionId,
+      progress,
+      message,
+      stepId,
+      stepStatus
+    });
+  }
+};
+
+// Helper function to clean up temporary files
+const cleanupTempFiles = (filePaths) => {
+  filePaths.forEach(filePath => {
+    if (filePath && fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath);
+        console.log('🗑️ Cleaned up temp file:', filePath);
+      } catch (error) {
+        console.error('Error cleaning up temp file:', error);
+      }
+    }
+  });
 };
 
 const createWavHeader = (dataLength, sampleRate) => {
@@ -793,6 +1282,75 @@ ipcMain.handle('save-flashcards', async (event, sessionId, flashcards) => {
   }
 });
 
+// === ASYNC FLASHCARD GENERATION HANDLERS ===
+
+ipcMain.handle('create-flashcard-request', async (event, sessionId, sessionData) => {
+  try {
+    const result = await firebaseDB.createFlashcardRequest(sessionId, sessionData);
+    console.log(`📝 Created flashcard request for session: ${sessionId}`);
+    return result;
+  } catch (error) {
+    console.error('Error creating flashcard request:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-flashcard-request', async (event, requestId) => {
+  try {
+    const result = await firebaseDB.getFlashcardRequest(requestId);
+    return result;
+  } catch (error) {
+    console.error('Error getting flashcard request:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('listen-flashcard-request', (event, requestId) => {
+  try {
+    console.log(`🔍 Setting up Firebase listener for flashcard request: ${requestId}`);
+    
+    const unsubscribe = firebaseDB.listenToFlashcardRequest(requestId, (result) => {
+      // Send real-time updates to the renderer process
+      event.sender.send('flashcard-request-update', { requestId, ...result });
+    });
+    
+    if (unsubscribe) {
+      // Store the unsubscribe function for cleanup
+      if (!global.flashcardListeners) {
+        global.flashcardListeners = new Map();
+      }
+      global.flashcardListeners.set(requestId, unsubscribe);
+      
+      console.log(`✅ Firebase listener established for request: ${requestId}`);
+      return { success: true };
+    } else {
+      return { success: false, error: 'Failed to set up listener' };
+    }
+  } catch (error) {
+    console.error('Error setting up flashcard request listener:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('stop-flashcard-request-listener', (event, requestId) => {
+  try {
+    if (global.flashcardListeners && global.flashcardListeners.has(requestId)) {
+      const unsubscribe = global.flashcardListeners.get(requestId);
+      unsubscribe();
+      global.flashcardListeners.delete(requestId);
+      console.log(`🔇 Stopped Firebase listener for request: ${requestId}`);
+      return { success: true };
+    } else {
+      return { success: false, error: 'No active listener found' };
+    }
+  } catch (error) {
+    console.error('Error stopping flashcard request listener:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// === END ASYNC FLASHCARD GENERATION HANDLERS ===
+
 ipcMain.handle('save-summary', async (event, sessionId, summary, keyPoints, actionItems) => {
   try {
     const result = await firebaseDB.updateSummary(sessionId, summary, keyPoints, actionItems);
@@ -1104,6 +1662,26 @@ ipcMain.handle('stop-audio-recording', async () => {
     return result;
   } catch (error) {
     console.error('Failed to stop audio recording:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Video processing handler
+ipcMain.handle('process-video', async (event, videoData) => {
+  try {
+    console.log('🎬 Received video processing request:');
+    console.log(`   Type: ${videoData.type}`);
+    console.log(`   Filename: ${videoData.filename || 'N/A'}`);
+    console.log(`   Source: ${videoData.source || 'N/A'}`);
+    console.log(`   File data length: ${videoData.fileData ? videoData.fileData.length : 'N/A'}`);
+    console.log(`   File size: ${videoData.fileSize || 'N/A'}`);
+    
+    const result = await processVideo(videoData);
+    return result;
+  } catch (error) {
+    console.error('❌ Failed to process video:', error);
+    console.error('❌ Error details:', error.message);
+    console.error('❌ Stack trace:', error.stack);
     return { success: false, error: error.message };
   }
 });

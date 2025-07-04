@@ -46,6 +46,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   generateSummary: (transcriptionText) => ipcRenderer.invoke('generate-summary', transcriptionText),
   chatWithAI: (message) => ipcRenderer.invoke('chat-with-ai', message),
   
+  // Video processing
+  processVideo: (videoData) => ipcRenderer.invoke('process-video', videoData),
+  
   // Window management
   resizeWindow: (width, height) => ipcRenderer.invoke('resize-window', width, height),
   
@@ -54,6 +57,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSession: (sessionId) => ipcRenderer.invoke('get-session', sessionId),
   updateSession: (sessionId, updates) => ipcRenderer.invoke('update-session', sessionId, updates),
   saveFlashcards: (sessionId, flashcards) => ipcRenderer.invoke('save-flashcards', sessionId, flashcards),
+
+  // === ASYNC FLASHCARD GENERATION ===
+  createFlashcardRequest: (sessionId, sessionData) => ipcRenderer.invoke('create-flashcard-request', sessionId, sessionData),
+  getFlashcardRequest: (requestId) => ipcRenderer.invoke('get-flashcard-request', requestId),
+  listenFlashcardRequest: (requestId) => ipcRenderer.invoke('listen-flashcard-request', requestId),
+  stopFlashcardRequestListener: (requestId) => ipcRenderer.invoke('stop-flashcard-request-listener', requestId),
+  
+  // Firebase real-time listener for flashcard requests
+  onFlashcardRequestUpdate: (callback) => {
+    ipcRenderer.on('flashcard-request-update', callback);
+    return () => ipcRenderer.removeListener('flashcard-request-update', callback);
+  },
+  // === END ASYNC FLASHCARD GENERATION ===
+
   saveSummary: (sessionId, summary, keyPoints, actionItems) => ipcRenderer.invoke('save-summary', sessionId, summary, keyPoints, actionItems),
   saveNotes: (sessionId, notes) => ipcRenderer.invoke('save-notes', sessionId, notes),
   deleteSession: (sessionId) => ipcRenderer.invoke('delete-session', sessionId),
@@ -96,6 +113,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('sessions-updated', () => callback());
   },
   
+  onVideoProcessingUpdate: (callback) => {
+    ipcRenderer.on('video-processing-update', (event, updateData) => callback(updateData));
+  },
+  
   // Remove listeners
   removeAuthStateListener: () => {
     ipcRenderer.removeAllListeners('auth-state-changed');
@@ -124,5 +145,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   removeSessionsUpdatedListener: () => {
     ipcRenderer.removeAllListeners('sessions-updated');
+  },
+  
+  removeVideoProcessingListener: () => {
+    ipcRenderer.removeAllListeners('video-processing-update');
   }
 }); 
