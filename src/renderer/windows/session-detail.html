@@ -1411,6 +1411,41 @@ Example response:
             border-color: var(--text-tertiary);
             color: var(--text-primary);
         }
+
+        .generate-btn {
+            background: var(--accent-blue);
+            border: 1px solid var(--accent-blue);
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .generate-btn:hover {
+            background: var(--accent-blue-hover);
+            border-color: var(--accent-blue-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .generate-btn.secondary {
+            background: var(--bg-tertiary);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .generate-btn.secondary:hover {
+            background: var(--bg-secondary);
+            border-color: var(--text-tertiary);
+            color: var(--text-primary);
+        }
     </style>
 </head>
 <body>
@@ -1435,11 +1470,11 @@ Example response:
 
     <div class="container">
         <div class="tabs">
-            <button class="tab active" onclick="showTab('transcript')">Transcript</button>
-            <button class="tab" onclick="showTab('summary')">Summary</button>
-            <button class="tab" onclick="showTab('notes')">Notes</button>
-            <button class="tab" onclick="showTab('flashcards')">Flashcards</button>
-            <button class="tab" onclick="showTab('screenshots')">Screenshots</button>
+            <button class="tab active" onclick="showTab('transcript', this)">Transcript</button>
+            <button class="tab" onclick="showTab('summary', this)">Summary</button>
+            <button class="tab" onclick="showTab('notes', this)">Notes</button>
+            <button class="tab" onclick="showTab('flashcards', this)">Flashcards</button>
+            <button class="tab" onclick="showTab('screenshots', this)">Screenshots</button>
         </div>
 
         <!-- Transcript Tab -->
@@ -1808,48 +1843,14 @@ Example response:
                         
                         showInfo(`🚀 Flashcard generation started! Processing in background. Refresh the page in a few minutes to see results.`);
                         
-                        // For now, show demo flashcards after a delay to simulate completion
-                        setTimeout(async () => {
-                            try {
-                                // Demo flashcards for testing async
-                                sessionData.flashcards = [
-                                    {
-                                        question: 'What is supervised learning?',
-                                        answer: 'Supervised learning is a type of machine learning where models are trained using labeled data with input-output pairs.'
-                                    },
-                                    {
-                                        question: 'Name three common supervised learning algorithms.',
-                                        answer: 'Linear regression, decision trees, and neural networks are common supervised learning algorithms.'
-                                    },
-                                    {
-                                        question: 'What type of data does unsupervised learning use?',
-                                        answer: 'Unsupervised learning uses unlabeled data to find patterns and structures without known outputs.'
-                                    }
-                                ];
-                                
-                                // Save to Firebase if available
-                                if (sessionData.id && sessionData.id !== 'demo' && window.electronAPI && window.electronAPI.saveFlashcards) {
-                                    const saveResult = await window.electronAPI.saveFlashcards(sessionData.id, sessionData.flashcards);
-                                    if (saveResult.success) {
-                                        console.log('Flashcards saved to Firebase');
-                                    }
-                                }
-                                
-                                // Update UI
-                                checkFlashcards();
-                                
-                                // Restore button
+                        // The n8n workflow will process the flashcards and store them in Firebase
+                        // The user needs to refresh the page to see the results
+                        
+                        // Restore button after a short delay
+                        setTimeout(() => {
                                 generateBtn.disabled = false;
                                 generateBtn.innerHTML = originalText;
-                                
-                                showSuccess(`🎉 Successfully generated ${sessionData.flashcards.length} flashcards!`);
-                                
-                            } catch (error) {
-                                console.error('Error processing results:', error);
-                                generateBtn.disabled = false;
-                                generateBtn.innerHTML = originalText;
-                            }
-                        }, 10000); // 10 seconds for demo
+                        }, 2000);
                     } else {
                         throw new Error('Invalid response format from n8n webhook');
                     }
@@ -1889,259 +1890,52 @@ Example response:
             }
         }
 
+        // Reload page and navigate to flashcards tab
+        function reloadPage() {
+            console.log('🔄 Reloading page to check for updated flashcards...');
+            
+            // Show visual feedback to user
+            const reloadBtn = document.getElementById('reload-page-btn');
+            if (reloadBtn) {
+                reloadBtn.disabled = true;
+                reloadBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
+                        <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
+                    </svg>
+                    Reloading...
+                `;
+            }
+            
+            // Add hash to URL to navigate to flashcards tab after reload
+            const currentUrl = window.location.href.split('#')[0]; // Remove any existing hash
+            window.location.href = currentUrl + '#flashcards';
+            window.location.reload();
+        }
+
+        function addReloadButton() {
+            const generateBtn = document.getElementById('generate-flashcards-btn');
+            if (generateBtn && !document.getElementById('reload-page-btn')) {
+                const reloadBtn = document.createElement('button');
+                reloadBtn.id = 'reload-page-btn';
+                reloadBtn.className = 'btn btn-secondary';
+                reloadBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                    </svg>
+                    Reload Page
+                `;
+                reloadBtn.onclick = reloadPage;
+                generateBtn.parentNode.insertBefore(reloadBtn, generateBtn.nextSibling);
+            }
+        }
+
+
+
+
+
         // Simplified implementation - no cleanup needed
 
-        // Legacy hardcoded session data (kept for reference/fallback)
-        // Now loading from Firebase instead
-        const allSessionData = {
-            '1': {
-            id: '1',
-            title: 'Machine Learning Fundamentals',
-            type: 'lecture',
-            date: '2024-01-15',
-            duration: '01:23:45',
-            description: 'Introduction to supervised and unsupervised learning algorithms.',
-            transcript: [
-                {
-                    timestamp: '00:00:15',
-                    text: 'Welcome to today\'s lecture on machine learning fundamentals. We\'ll be covering the basics of supervised and unsupervised learning algorithms.'
-                },
-                {
-                    timestamp: '00:02:30',
-                    text: 'Supervised learning is a type of machine learning where we train models using labeled data. The algorithm learns from input-output pairs.'
-                },
-                {
-                    timestamp: '00:05:45',
-                    text: 'Common supervised learning algorithms include linear regression, decision trees, and neural networks. Each has its own strengths and use cases.'
-                }
-            ],
-            summary: 'This lecture provided an introduction to machine learning fundamentals, focusing on supervised and unsupervised learning approaches.',
-            keyPoints: [
-                'Supervised learning uses labeled training data',
-                'Unsupervised learning finds patterns in unlabeled data',
-                'Common algorithms include regression, classification, and clustering',
-                'Neural networks are powerful but require large datasets'
-            ],
-            actionItems: [
-                'Practice implementing linear regression',
-                'Read chapter 3 of the textbook',
-                'Complete homework assignment on decision trees'
-            ],
-            flashcards: [],
-                notes: [],
-            screenshots: [
-                { id: 1, timestamp: '00:03:15', description: 'Supervised Learning Diagram' },
-                { id: 2, timestamp: '00:07:22', description: 'Algorithm Comparison Chart' },
-                { id: 3, timestamp: '00:12:45', description: 'Neural Network Architecture' }
-            ]
-            },
-            '2': {
-                id: '2',
-                title: 'Weekly Team Standup',
-                type: 'zoom',
-                date: '2024-01-14',
-                duration: '00:32:15',
-                description: 'Sprint planning and progress updates discussion.',
-                transcript: [
-                    {
-                        timestamp: '00:00:10',
-                        text: 'Good morning everyone, welcome to our weekly standup. Let\'s start with sprint updates.'
-                    },
-                    {
-                        timestamp: '00:01:30',
-                        text: 'Sarah, can you give us an update on the authentication feature development?'
-                    },
-                    {
-                        timestamp: '00:02:45',
-                        text: 'The authentication system is 80% complete. I\'m working on the password reset functionality.'
-                    },
-                    {
-                        timestamp: '00:04:20',
-                        text: 'Great progress! Mike, how are the API integrations coming along?'
-                    }
-                ],
-                summary: 'Weekly standup covering sprint progress, authentication feature updates, and API integration status.',
-                keyPoints: [
-                    'Authentication system 80% complete',
-                    'Password reset functionality in progress',
-                    'API integrations on track',
-                    'Sprint goals aligned with timeline'
-                ],
-                actionItems: [
-                    'Complete authentication testing by Friday',
-                    'Review API documentation',
-                    'Schedule code review for next Tuesday'
-                ],
-                flashcards: [],
-                notes: [],
-                screenshots: [
-                    { id: 1, timestamp: '00:02:15', description: 'Sprint Board Overview' },
-                    { id: 2, timestamp: '00:05:30', description: 'Authentication Flow Diagram' },
-                    { id: 3, timestamp: '00:08:45', description: 'API Integration Status' }
-                ]
-            },
-            '3': {
-                id: '3',
-                title: 'Python Tutorial Series',
-                type: 'youtube',
-                date: '2024-01-13',
-                duration: '02:15:30',
-                description: 'Complete Python programming tutorial for beginners.',
-                transcript: [
-                    {
-                        timestamp: '00:00:20',
-                        text: 'Welcome to this comprehensive Python tutorial series for beginners. Today we\'ll cover variables and data types.'
-                    },
-                    {
-                        timestamp: '00:03:45',
-                        text: 'Python has several built-in data types including integers, floats, strings, and booleans.'
-                    },
-                    {
-                        timestamp: '00:07:15',
-                        text: 'Let\'s create our first variable. In Python, you can assign a value like this: name equals quote John quote.'
-                    },
-                    {
-                        timestamp: '00:12:30',
-                        text: 'Lists in Python are ordered collections that can hold multiple items of different data types.'
-                    }
-                ],
-                summary: 'Comprehensive Python tutorial covering variables, data types, and basic programming concepts for beginners.',
-                keyPoints: [
-                    'Python variables don\'t need type declarations',
-                    'Built-in data types: int, float, string, boolean',
-                    'Lists are ordered and mutable collections',
-                    'Python syntax is clean and readable'
-                ],
-                actionItems: [
-                    'Practice creating variables with different data types',
-                    'Complete the exercises in chapter 2',
-                    'Install Python development environment'
-                ],
-                flashcards: [],
-                notes: [],
-                screenshots: [
-                    { id: 1, timestamp: '00:05:20', description: 'Variable Assignment Example' },
-                    { id: 2, timestamp: '00:08:45', description: 'Data Types Overview' },
-                    { id: 3, timestamp: '00:15:30', description: 'List Operations Demo' }
-                ]
-            },
-            '4': {
-                id: '4',
-                title: 'Introduction to Data Science',
-                type: 'lecture',
-                date: '2024-01-16',
-                duration: '00:47:30',
-                description: 'Comprehensive overview of data science fundamentals, CRISP-DM methodology, and essential skills for aspiring data scientists.',
-                transcript: [
-                    {
-                        timestamp: '00:00:30',
-                        text: 'Welcome everyone to today\'s comprehensive lecture on Introduction to Data Science. I\'m Dr. Sarah Mitchell, a Professor of Computer Science, and I\'ve been working in data science for over fifteen years.'
-                    },
-                    {
-                        timestamp: '00:01:15',
-                        text: 'Data science is a multidisciplinary field that uses scientific methods, processes, algorithms, and systems to extract knowledge and insights from structured and unstructured data.'
-                    },
-                    {
-                        timestamp: '00:02:30',
-                        text: 'Think of data science as modern-day alchemy - but instead of trying to turn lead into gold, we\'re transforming raw, messy data into valuable, actionable insights.'
-                    },
-                    {
-                        timestamp: '00:04:15',
-                        text: 'We create approximately 2.5 quintillion bytes of data every single day. That\'s equivalent to 250,000 complete digital copies of the Library of Congress being created daily.'
-                    },
-                    {
-                        timestamp: '00:05:45',
-                        text: 'The data science workflow is organized around CRISP-DM: Cross-Industry Standard Process for Data Mining, consisting of six interconnected phases.'
-                    },
-                    {
-                        timestamp: '00:07:15',
-                        text: 'Business Understanding is where we define the problem from a business perspective. Are we trying to predict customer churn? Optimize supply chain efficiency?'
-                    },
-                    {
-                        timestamp: '00:09:00',
-                        text: 'Data Preparation is often the least glamorous but most important part. Studies show data scientists spend 60-80% of their time on data cleaning and preparation.'
-                    },
-                    {
-                        timestamp: '00:11:30',
-                        text: 'For supervised learning, we might use linear regression, logistic regression, decision trees, random forests, or neural networks depending on the problem type.'
-                    },
-                    {
-                        timestamp: '00:17:45',
-                        text: 'Analytical thinking and problem-solving form the foundation of data science. You need to be comfortable with ambiguity and curious about patterns.'
-                    },
-                    {
-                        timestamp: '00:19:30',
-                        text: 'Python has emerged as the dominant language with libraries like pandas, NumPy, matplotlib, and scikit-learn. R is popular in academic contexts.'
-                    },
-                    {
-                        timestamp: '00:21:45',
-                        text: 'One of the most common mistakes is confusing correlation with causation. Ice cream sales and drowning incidents are correlated, but ice cream doesn\'t cause drowning.'
-                    },
-                    {
-                        timestamp: '00:24:00',
-                        text: 'In healthcare, predictive models can identify patients at risk of sepsis hours before clinical symptoms appear, potentially saving thousands of lives.'
-                    },
-                    {
-                        timestamp: '00:26:15',
-                        text: 'Netflix uses sophisticated recommendation algorithms, airlines use dynamic pricing, and Walmart optimizes inventory across thousands of stores using machine learning.'
-                    },
-                    {
-                        timestamp: '00:33:00',
-                        text: 'Start with Python basics, then dive into pandas for data manipulation. Build a portfolio of projects and share your work on GitHub.'
-                    },
-                    {
-                        timestamp: '00:39:45',
-                        text: 'Career paths include traditional data scientist roles, machine learning engineers, data analysts, research scientists, and product data scientists.'
-                    },
-                    {
-                        timestamp: '00:44:15',
-                        text: 'Data science is about curiosity, creativity, and solving meaningful problems. Combine technical proficiency with domain knowledge and communication skills.'
-                    }
-                ],
-                summary: 'Comprehensive 47-minute lecture covering data science fundamentals, historical evolution, CRISP-DM methodology deep dive, essential technical and soft skills, extensive real-world applications across industries, detailed career paths, and practical guidance for aspiring data scientists.',
-                keyPoints: [
-                    'Data science combines statistics, mathematics, computer science, and domain expertise',
-                    'CRISP-DM methodology: 6 interconnected phases from Business Understanding to Deployment',
-                    'Data scientists spend 60-80% of their time on data cleaning and preparation',
-                    'Python dominates with pandas, NumPy, matplotlib, scikit-learn libraries',
-                    'Four Vs of big data: Volume, Velocity, Variety, and Veracity',
-                    'Correlation vs causation is a critical distinction to understand',
-                    'Communication skills are essential for translating technical findings',
-                    'Domain expertise significantly enhances analysis value and accuracy',
-                    'Healthcare applications include sepsis prediction and medical imaging AI',
-                    'Business applications span recommendation systems to fraud detection',
-                    'Multiple career paths: data scientist, ML engineer, analyst, researcher'
-                ],
-                actionItems: [
-                    'Start with Python basics and progress to data science libraries',
-                    'Master pandas for data manipulation and NumPy for numerical computing',
-                    'Build statistics foundation including probability and hypothesis testing',
-                    'Practice with real datasets on Kaggle and build a project portfolio',
-                    'Learn Git/GitHub for version control and code sharing',
-                    'Develop data visualization skills with matplotlib and seaborn',
-                    'Understand machine learning algorithms and their appropriate use cases',
-                    'Focus on communication and stakeholder management skills',
-                    'Consider specializing in domains like NLP, computer vision, or time series',
-                    'Stay current with industry trends and emerging technologies'
-                ],
-                flashcards: [],
-                notes: [],
-                screenshots: [
-                    { id: 1, timestamp: '00:02:30', description: 'Data Science Definition and Core Components' },
-                    { id: 2, timestamp: '00:05:45', description: 'CRISP-DM Methodology Framework' },
-                    { id: 3, timestamp: '00:11:30', description: 'Machine Learning Algorithm Types' },
-                    { id: 4, timestamp: '00:15:30', description: 'Model Evaluation Metrics' },
-                    { id: 5, timestamp: '00:19:30', description: 'Python Libraries Ecosystem' },
-                    { id: 6, timestamp: '00:24:00', description: 'Healthcare AI Applications' },
-                    { id: 7, timestamp: '00:28:30', description: 'Business Intelligence Use Cases' },
-                    { id: 8, timestamp: '00:33:00', description: 'Learning Roadmap for Beginners' },
-                    { id: 9, timestamp: '00:37:30', description: 'Portfolio Development Strategy' },
-                    { id: 10, timestamp: '00:39:45', description: 'Data Science Career Paths' },
-                    { id: 11, timestamp: '00:42:00', description: 'Emerging Trends and Technologies' },
-                    { id: 12, timestamp: '00:44:15', description: 'Ethics in Data Science' }
-                ]
-            }
-        };
+        // All session data is now loaded from Firebase - no more hard-coded mock data
 
         // Current session data (will be set based on URL parameter)
         let sessionData = null;
@@ -2169,41 +1963,84 @@ Example response:
                         console.log('Loaded session from Firebase:', sessionData.title);
                     } else {
                         console.error('Failed to load session from Firebase:', result.error);
-                        // Fallback to demo data for development
-                        sessionData = getDemoSessionData();
+                        throw new Error(`Failed to load session: ${result.error}`);
                     }
                 } else {
-                    console.warn('No session ID provided or electronAPI not available');
-                    sessionData = getDemoSessionData();
+                    throw new Error('No session ID provided or electronAPI not available');
                 }
             } catch (error) {
                 console.error('Error loading session data:', error);
-                sessionData = getDemoSessionData();
+                // Show error message to user with recovery options
+                document.body.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;">' +
+                    '<h2 style="color: #e74c3c; margin-bottom: 16px;">Session Not Found</h2>' +
+                    '<p style="color: #666; margin-bottom: 24px; text-align: center;">Unable to load session data. This might be due to a sync issue with flashcards.</p>' +
+                    '<div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">' +
+                    '<button onclick="attemptRecovery()" style="padding: 12px 24px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">🔄 Try Recovery</button>' +
+                    '<button onclick="openConsoleInstructions()" style="padding: 12px 24px; background: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">📋 Show Session List</button>' +
+                    '<button onclick="window.location.href=\'index.html\'" style="padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">🏠 Dashboard</button>' +
+                    '</div>' +
+                    '<div id="recovery-info" style="margin-top: 24px; padding: 16px; background: #f8f9fa; border-radius: 8px; max-width: 500px; display: none;">' +
+                    '<h4 style="margin-top: 0;">Recovery Instructions:</h4>' +
+                    '<ol style="text-align: left; font-size: 14px;">' +
+                    '<li>Open browser console (F12)</li>' +
+                    '<li>Look for session list in console</li>' +
+                    '<li>Find your session ID</li>' +
+                    '<li>Update URL with correct session ID</li>' +
+                    '</ol>' +
+                    '</div>' +
+                    '</div>';
+                    
+                // Add recovery functions to window
+                window.attemptRecovery = async function() {
+                    console.log('🔄 Attempting automatic recovery...');
+                    try {
+                        if (window.electronAPI && window.electronAPI.loadUserSessions) {
+                            const result = await window.electronAPI.loadUserSessions();
+                            if (result.success && result.sessions.length > 0) {
+                                console.log('📋 Found sessions:', result.sessions.map(s => ({
+                                    id: s.id, 
+                                    title: s.title, 
+                                    date: s.date,
+                                    hasFlashcards: s.flashcards && s.flashcards.length > 0
+                                })));
+                                
+                                const recentSession = result.sessions.find(s => 
+                                    (s.flashcards && s.flashcards.length > 0) || 
+                                    new Date(s.updatedAt) > new Date(Date.now() - 24 * 60 * 60 * 1000)
+                                );
+                                
+                                if (recentSession) {
+                                    alert('Found recent session: ' + recentSession.title + '. Redirecting...');
+                                    window.location.href = 'session-detail.html?sessionId=' + recentSession.id;
+                                    return;
+                                }
+                            }
+                        }
+                        alert('No recent sessions found. Check console for session list.');
+                        window.openConsoleInstructions();
+                    } catch (error) {
+                        console.error('Recovery failed:', error);
+                        alert('Recovery failed. Please check console and use manual recovery.');
+                        window.openConsoleInstructions();
+                    }
+                };
+                
+                window.openConsoleInstructions = function() {
+                    document.getElementById('recovery-info').style.display = 'block';
+                    console.log('%c=== SESSION RECOVERY HELP ===', 'font-size: 16px; font-weight: bold; color: #007bff;');
+                    console.log('1. Look for your session in the list above');
+                    console.log('2. Copy the session ID');
+                    console.log('3. Update the URL: session-detail.html?sessionId=YOUR_SESSION_ID');
+                    console.log('4. Or click on a session from the dashboard');
+                };
+                
+                return;
             }
         }
         
         function getDemoSessionData() {
-            // Fallback demo data for development/testing
-            return {
-                id: 'demo',
-                title: 'Demo Session',
-                type: 'lecture',
-                date: new Date().toISOString().split('T')[0],
-                duration: '00:30:00',
-                description: 'Demo session for testing purposes',
-                transcript: [
-                    {
-                        timestamp: '00:00:15',
-                        text: 'This is a demo session transcript. You can test the AI features with this content.'
-                    }
-                ],
-                summary: '',
-                keyPoints: [],
-                actionItems: [],
-                flashcards: [],
-                notes: [],
-                screenshots: []
-            };
+            // No demo data - user should only see real sessions
+            return null;
         }
 
         async function initializePage() {
@@ -2225,6 +2062,22 @@ Example response:
             
             // Initialize chat
             await initializeChat();
+            
+            // Check if we should navigate to a specific tab (e.g., from reload button)
+            checkUrlHashAndNavigate();
+        }
+
+        // Check URL hash and navigate to specific tab
+        function checkUrlHashAndNavigate() {
+            const hash = window.location.hash.substring(1); // Remove the # symbol
+            if (hash === 'flashcards') {
+                console.log('🎯 Navigating to flashcards tab from URL hash');
+                showTab('flashcards');
+                // Clean up the hash from URL after navigation
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState(null, null, window.location.pathname + window.location.search);
+                }
+            }
         }
 
         function loadTranscript() {
@@ -2283,6 +2136,9 @@ Example response:
                 generateBtn.style.display = 'inline-flex';
                 regenerateBtn.style.display = 'none';
                 exportGroup.style.display = 'none';
+                
+                // Add reload button if no flashcards
+                addReloadButton();
             }
             
             // Always load flashcards (including the Add card)
@@ -2440,13 +2296,27 @@ Example response:
             grid.innerHTML = flashcardHTML + addCardHTML;
         }
 
-        function showTab(tabName) {
+        function showTab(tabName, targetElement = null) {
             // Remove active class from all tabs and content
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
-            // Add active class to selected tab and content
-            event.target.classList.add('active');
+            // Add active class to the tab button (handle both click events and programmatic calls)
+            if (targetElement) {
+                targetElement.classList.add('active');
+            } else if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // Find the tab button by text content for programmatic calls
+                const tabButtons = document.querySelectorAll('.tab');
+                tabButtons.forEach(tab => {
+                    if (tab.textContent.toLowerCase().includes(tabName.toLowerCase())) {
+                        tab.classList.add('active');
+                    }
+                });
+            }
+            
+            // Add active class to the tab content
             document.getElementById(tabName + '-content').classList.add('active');
         }
 

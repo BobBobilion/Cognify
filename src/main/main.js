@@ -3,7 +3,6 @@ const path = require('path');
 const { auth } = require('../config/firebase-config');
 const { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } = require('firebase/auth');
 const firebaseDB = require('../utils/firebase-db');
-const sampleDataSeeder = require('../utils/sample-data-seeder');
 
 const OpenAI = require('openai');
 const fs = require('fs');
@@ -1429,31 +1428,6 @@ ipcMain.handle('clear-chat-history', async (event, sessionId) => {
   }
 });
 
-ipcMain.handle('seed-sample-data', async (event) => {
-  if (!currentUser) {
-    return { success: false, error: 'User not authenticated' };
-  }
-  
-  try {
-    console.log('🌱 Starting sample data seeding for user:', currentUser.email);
-    const result = await sampleDataSeeder.seedUserData(currentUser.uid);
-    
-    if (result.success) {
-      console.log(`✅ Sample data seeded: ${result.seededCount}/${result.totalSessions} sessions`);
-      
-      // Refresh the main window to show new sessions
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('sessions-updated');
-      }
-    }
-    
-    return result;
-  } catch (error) {
-    console.error('Error seeding sample data:', error);
-    return { success: false, error: error.message };
-  }
-});
-
 // Window Management Handlers
 ipcMain.handle('close-auth-window', () => {
   // No longer needed since auth happens in main window
@@ -1773,10 +1747,7 @@ ipcMain.handle('generate-flashcards', async (event, transcriptionText) => {
       return { 
         success: false, 
         error: error.message,
-        flashcards: [
-          { question: 'What were the main topics in this session?', answer: 'Review the session transcript for key concepts and ideas.' },
-          { question: 'What should be studied from this material?', answer: 'Focus on the core concepts and principles discussed.' }
-        ]
+        flashcards: []
       };
     }
   }

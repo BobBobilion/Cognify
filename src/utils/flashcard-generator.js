@@ -306,16 +306,8 @@ class FlashcardGenerator {
 
   // Utility: Fallback flashcards if all else fails
   getFallbackFlashcards() {
-    return [
-      {
-        question: 'What were the main topics covered in this session?',
-        answer: 'Please refer to the session transcript for the main topics discussed.'
-      },
-      {
-        question: 'What key concepts should be reviewed from this session?',
-        answer: 'Review the transcript to identify the most important concepts and ideas presented.'
-      }
-    ];
+    // Return empty array instead of mock data
+    return [];
   }
 }
 
